@@ -138,10 +138,24 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { labelFr: "Licences", labelEn: "Licenses", href: "/licenses", icon: KeyRound, roles: SA },
       {
-        labelFr: "Abonnements",
-        labelEn: "Subscriptions",
+        labelFr: "Plans d'abonnement",
+        labelEn: "Subscription Plans",
         href: "/subscriptions",
         icon: BadgeCheck,
+        roles: SA,
+      },
+      {
+        labelFr: "Gestion des abonnements",
+        labelEn: "Subscription Management",
+        href: "/subscriptions/manage",
+        icon: CreditCard,
+        roles: SA,
+      },
+      {
+        labelFr: "Promotions abonnement",
+        labelEn: "Subscription Promotions",
+        href: "/subscriptions/promotions",
+        icon: Percent,
         roles: SA,
       },
     ],

@@ -10,6 +10,10 @@ import {
   Percent,
   KeyRound,
   Clock,
+  Building2,
+  BadgeCheck,
+  XCircle,
+  Megaphone,
 } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import { SkeletonCards } from "@/components/ui/Skeleton";
@@ -34,6 +38,10 @@ export function SuperAdminDashboard() {
     queryKey: ["dashboard", "sa", "kpis"],
     queryFn: () => dashboardService.superAdminKpis(),
   });
+  const { data: subKpis } = useQuery({
+    queryKey: ["dashboard", "sa", "subscription-kpis"],
+    queryFn: () => dashboardService.subscriptionKpis(),
+  });
   const { data: revenue } = useQuery({ queryKey: ["an", "revenue"], queryFn: analyticsService.revenueOverTime });
   const { data: tickets } = useQuery({ queryKey: ["an", "tickets"], queryFn: analyticsService.ticketsOverTime });
   const { data: eventsBreak } = useQuery({ queryKey: ["an", "events"], queryFn: analyticsService.eventsBreakdown });
@@ -54,6 +62,40 @@ export function SuperAdminDashboard() {
           <StatCard label={t("kpi.activeLicenses")} value={String(kpis.activeLicenses)} icon={KeyRound} tone="accent" />
           <StatCard label={t("kpi.pendingEvents")} value={String(kpis.pendingEvents)} icon={Clock} tone="info" hint="à valider" />
         </div>
+      )}
+
+      {/* Suivi des abonnements & entreprises */}
+      {subKpis && (
+        <div>
+          <h2 className="mb-3 text-h4 text-foreground">Abonnements & entreprises</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <StatCard label="Entreprises" value={String(subKpis.totalCompanies)} icon={Building2} tone="primary" />
+            <StatCard label="Abonnements actifs" value={String(subKpis.activeSubscriptions)} icon={BadgeCheck} tone="secondary" />
+            <StatCard label="Abonnements expirés" value={String(subKpis.expiredSubscriptions)} icon={XCircle} tone="info" hint="publication bloquée" />
+            <StatCard label="Expirent bientôt" value={String(subKpis.expiringSoon)} icon={Clock} tone="accent" hint="≤ 30 jours" />
+            <StatCard label="Revenus abonnements" value={formatCurrencyCompact(subKpis.subscriptionRevenue)} icon={TrendingUp} tone="primary" />
+            <StatCard label="Promotions actives" value={String(subKpis.activePromotions)} icon={Megaphone} tone="secondary" />
+          </div>
+        </div>
+      )}
+
+      {/* Publications par entreprise */}
+      {subKpis && (
+        <Card>
+          <CardHeader><CardTitle>Publications par entreprise</CardTitle></CardHeader>
+          <CardBody className="p-0">
+            <div className="divide-y divide-border">
+              {[...subKpis.publicationsByCompany]
+                .sort((a, b) => b.publications - a.publications)
+                .map((row) => (
+                  <div key={row.organizationId} className="flex items-center justify-between px-5 py-3">
+                    <span className="text-sm font-medium text-foreground">{row.organizationName}</span>
+                    <span className="text-sm text-muted">{row.publications} publication(s)</span>
+                  </div>
+                ))}
+            </div>
+          </CardBody>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

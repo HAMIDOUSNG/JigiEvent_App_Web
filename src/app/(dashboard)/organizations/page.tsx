@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/Button";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Toolbar } from "@/components/ui/Toolbar";
 import { Avatar } from "@/components/ui/Avatar";
@@ -64,7 +66,15 @@ export default function OrganizationsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Organisations" description="Entités publiques et privées de la plateforme." />
+      <PageHeader
+        title="Organisations"
+        description="Entités publiques et privées de la plateforme."
+        action={
+          <Button onClick={() => router.push("/organizations/create")}>
+            <Plus className="h-4 w-4" /> Nouveau compte
+          </Button>
+        }
+      />
 
       <Toolbar
         search={list.search}

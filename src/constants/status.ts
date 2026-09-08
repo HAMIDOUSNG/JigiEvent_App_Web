@@ -6,6 +6,9 @@ import type {
   EntityStatus,
   TicketStatus,
   PromotionStatus,
+  SubscriptionStatus,
+  SubscriptionPeriod,
+  PlanStatus,
 } from "@/types";
 
 export type BadgeTone = "success" | "warning" | "error" | "info" | "neutral" | "accent";
@@ -67,6 +70,30 @@ export const PROMOTION_STATUS: Record<PromotionStatus, StatusMeta> = {
   scheduled: { labelFr: "Programmée", labelEn: "Scheduled", tone: "info" },
   ended: { labelFr: "Terminée", labelEn: "Ended", tone: "neutral" },
   draft: { labelFr: "Brouillon", labelEn: "Draft", tone: "neutral" },
+};
+
+export const SUBSCRIPTION_STATUS: Record<SubscriptionStatus, StatusMeta> = {
+  active: { labelFr: "Actif", labelEn: "Active", tone: "success" },
+  expired: { labelFr: "Expiré", labelEn: "Expired", tone: "error" },
+  suspended: { labelFr: "Suspendu", labelEn: "Suspended", tone: "neutral" },
+};
+
+export const PLAN_STATUS: Record<PlanStatus, StatusMeta> = {
+  active: { labelFr: "Actif", labelEn: "Active", tone: "success" },
+  inactive: { labelFr: "Inactif", labelEn: "Inactive", tone: "neutral" },
+};
+
+export const SUBSCRIPTION_PERIOD: Record<SubscriptionPeriod, StatusMeta> = {
+  daily: { labelFr: "Journalier", labelEn: "Daily", tone: "info" },
+  monthly: { labelFr: "Mensuel", labelEn: "Monthly", tone: "accent" },
+  yearly: { labelFr: "Annuel", labelEn: "Yearly", tone: "success" },
+};
+
+/** Suffix used when displaying a plan price, e.g. "/ jour". */
+export const SUBSCRIPTION_PERIOD_SUFFIX: Record<SubscriptionPeriod, string> = {
+  daily: "jour",
+  monthly: "mois",
+  yearly: "an",
 };
 
 export const PAYMENT_METHOD_LABEL: Record<string, string> = {

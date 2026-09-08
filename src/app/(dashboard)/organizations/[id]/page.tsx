@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Mail, Phone, MapPin, CalendarDays, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -15,13 +16,14 @@ import { DetailList, DetailRow } from "@/components/ui/DetailList";
 import { EmptyState } from "@/components/ui/States";
 import { SkeletonCards } from "@/components/ui/Skeleton";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { organizationService, licenseService } from "@/services";
-import { ENTITY_STATUS, LICENSE_STATUS } from "@/constants/status";
+import { organizationService, licenseService, subscriptionService } from "@/services";
+import { ENTITY_STATUS, LICENSE_STATUS, SUBSCRIPTION_STATUS, SUBSCRIPTION_PERIOD, PAYMENT_METHOD_LABEL, PAYMENT_STATUS } from "@/constants/status";
 import { categories } from "@/mocks/data";
-import { formatCurrency, formatCurrencyCompact, formatDate } from "@/utils/format";
+import { formatCurrency, formatCurrencyCompact, formatDate, daysUntil } from "@/utils/format";
 
 export default function OrganizationDetailPage({ params }: PageProps<"/organizations/[id]">) {
   useRequireAuth(["SUPER_ADMIN"]);
+  const router = useRouter();
   const { id } = use(params);
 
   const { data: org, isLoading } = useQuery({
@@ -30,6 +32,9 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
   });
   const { data: licenses } = useQuery({ queryKey: ["licenses-all"], queryFn: () => licenseService.list({ pageSize: 100 }) });
   const license = licenses?.data.find((l) => l.organizationId === id);
+
+  const { data: subscription } = useQuery({ queryKey: ["subscription", id], queryFn: () => subscriptionService.byOrg(id) });
+  const { data: subPayments } = useQuery({ queryKey: ["sub-payments", id], queryFn: () => subscriptionService.paymentsForOrg(id) });
 
   if (isLoading) return <div className="space-y-5"><SkeletonCards count={3} /></div>;
   if (!org) return <EmptyState title="Organisation introuvable" />;
@@ -45,7 +50,11 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
       <PageHeader
         title={org.name}
         description={`${catName} · ${org.city}, ${org.region}`}
-        action={<Button variant="outline">Modifier</Button>}
+        action={
+          <Button variant="outline" onClick={() => router.push(`/organizations/${id}/edit`)}>
+            Modifier
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -91,6 +100,26 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
             </CardBody>
           </Card>
 
+          {subscription && (
+            <Card>
+              <CardHeader><CardTitle>Abonnement</CardTitle></CardHeader>
+              <CardBody className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Badge tone="accent" dot={false}>{subscription.planName}</Badge>
+                  <StatusBadge meta={SUBSCRIPTION_STATUS[subscription.status]} />
+                </div>
+                <DetailRow label="Formule" value={SUBSCRIPTION_PERIOD[subscription.period].labelFr} />
+                <DetailRow label="Prix payé" value={formatCurrency(subscription.pricePaid)} />
+                <DetailRow label="Début" value={formatDate(subscription.startDate)} />
+                <DetailRow label="Expiration" value={formatDate(subscription.endDate)} />
+                <DetailRow
+                  label="Jours restants"
+                  value={subscription.status === "expired" ? "Expiré" : `${Math.max(daysUntil(subscription.endDate), 0)} j`}
+                />
+              </CardBody>
+            </Card>
+          )}
+
           {license && (
             <Card>
               <CardHeader><CardTitle>Licence</CardTitle></CardHeader>
@@ -106,6 +135,34 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
           )}
         </div>
       </div>
+
+      {/* Payment history */}
+      {subPayments && subPayments.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Historique des paiements</CardTitle></CardHeader>
+          <CardBody className="p-0">
+            <div className="divide-y divide-border">
+              {subPayments.map((p) => (
+                <div key={p.id} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {p.planName} · {formatDate(p.paidAt)}
+                    </p>
+                    <p className="text-caption">
+                      {PAYMENT_METHOD_LABEL[p.method] ?? p.method}
+                      {p.promotionName ? ` · Promo : ${p.promotionName}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-foreground">{formatCurrency(p.amount)}</span>
+                    <StatusBadge meta={PAYMENT_STATUS[p.status]} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }
