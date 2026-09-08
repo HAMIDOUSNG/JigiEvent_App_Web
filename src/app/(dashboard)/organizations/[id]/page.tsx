@@ -19,7 +19,7 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { organizationService, licenseService, subscriptionService } from "@/services";
 import { ENTITY_STATUS, LICENSE_STATUS, SUBSCRIPTION_STATUS, SUBSCRIPTION_PERIOD, PAYMENT_METHOD_LABEL, PAYMENT_STATUS } from "@/constants/status";
 import { categories } from "@/mocks/data";
-import { getCountry, currencyForCountry } from "@/constants/countries";
+import { getCountry, currencyForCountry, timezoneForCountry } from "@/constants/countries";
 import { formatCurrency, formatCurrencyCompact, formatDate, daysUntil } from "@/utils/format";
 
 export default function OrganizationDetailPage({ params }: PageProps<"/organizations/[id]">) {
@@ -43,6 +43,7 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
   const catName = categories.find((c) => c.id === org.categoryId)?.name ?? org.categoryId;
   const country = getCountry(org.countryCode);
   const currency = currencyForCountry(org.countryCode);
+  const timeZone = timezoneForCountry(org.countryCode);
 
   return (
     <div className="space-y-5">
@@ -82,6 +83,7 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
               <DetailRow label="Statut" value={<StatusBadge meta={ENTITY_STATUS[org.status]} />} />
               <DetailRow label="Pays" value={country ? `${country.flag} ${country.name}` : org.countryCode} />
               <DetailRow label="Devise" value={`${currency.symbol} (${currency.code})`} />
+              <DetailRow label="Fuseau horaire" value={timeZone} />
               <DetailRow label="Région" value={`${org.city}, ${org.region}`} />
               <DetailRow label="Adresse" value={<span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-muted" />{org.address}</span>} />
               <DetailRow label="Téléphone" value={<span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted" />{org.phone}</span>} />

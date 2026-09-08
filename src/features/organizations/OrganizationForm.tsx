@@ -12,7 +12,7 @@ import { Input, Select, Field } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { categories } from "@/mocks/data";
-import { COUNTRIES, COUNTRY_OPTIONS, DEFAULT_COUNTRY_CODE, getCountry } from "@/constants/countries";
+import { COUNTRIES, COUNTRY_OPTIONS, DEFAULT_COUNTRY_CODE, getCountry, timezoneForCountry } from "@/constants/countries";
 import { organizationService, planService } from "@/services";
 import { ENTITY_STATUS, SUBSCRIPTION_PERIOD_SUFFIX } from "@/constants/status";
 import { formatCurrency } from "@/utils/format";
@@ -197,7 +197,7 @@ export function OrganizationForm({
               label="Pays"
               required
               error={errors.countryCode?.message}
-              hint={`Devise : ${country.currency.symbol} (${country.currency.code})`}
+              hint={`Devise : ${country.currency.symbol} (${country.currency.code}) · Fuseau : ${timezoneForCountry(country.code)}`}
             >
               <Select
                 value={countryCode}

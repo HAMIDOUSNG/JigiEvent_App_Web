@@ -14,6 +14,8 @@ export interface Country {
   flag: string;
   dialCode: string;
   currency: CurrencyConfig;
+  /** Fuseau horaire IANA principal du pays (ex. "Africa/Bamako"). */
+  timezone: string;
   regions: string[];
   paymentMethods: PaymentMethod[];
 }
@@ -30,6 +32,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇲🇱",
     dialCode: "+223",
     currency: XOF,
+    timezone: "Africa/Bamako",
     regions: ["Bamako", "Sikasso", "Ségou", "Kayes", "Mopti", "Koulikoro", "Gao", "Tombouctou"],
     paymentMethods: ["orange_money", "moov_money", "bank_card"],
   },
@@ -39,6 +42,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇸🇳",
     dialCode: "+221",
     currency: XOF,
+    timezone: "Africa/Dakar",
     regions: ["Dakar", "Thiès", "Saint-Louis", "Ziguinchor", "Kaolack", "Touba", "Diourbel"],
     paymentMethods: ["wave", "orange_money", "free_money", "bank_card"],
   },
@@ -48,6 +52,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇨🇮",
     dialCode: "+225",
     currency: XOF,
+    timezone: "Africa/Abidjan",
     regions: ["Abidjan", "Yamoussoukro", "Bouaké", "San-Pédro", "Korhogo", "Daloa"],
     paymentMethods: ["orange_money", "mtn_momo", "moov_money", "wave", "bank_card"],
   },
@@ -57,6 +62,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇧🇫",
     dialCode: "+226",
     currency: XOF,
+    timezone: "Africa/Ouagadougou",
     regions: ["Ouagadougou", "Bobo-Dioulasso", "Koudougou", "Ouahigouya", "Banfora"],
     paymentMethods: ["orange_money", "moov_money", "bank_card"],
   },
@@ -66,6 +72,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇧🇯",
     dialCode: "+229",
     currency: XOF,
+    timezone: "Africa/Porto-Novo",
     regions: ["Cotonou", "Porto-Novo", "Parakou", "Abomey-Calavi", "Djougou"],
     paymentMethods: ["mtn_momo", "moov_money", "bank_card"],
   },
@@ -75,6 +82,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇹🇬",
     dialCode: "+228",
     currency: XOF,
+    timezone: "Africa/Lome",
     regions: ["Lomé", "Sokodé", "Kara", "Kpalimé", "Atakpamé"],
     paymentMethods: ["moov_money", "mtn_momo", "bank_card"],
   },
@@ -84,6 +92,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇳🇪",
     dialCode: "+227",
     currency: XOF,
+    timezone: "Africa/Niamey",
     regions: ["Niamey", "Zinder", "Maradi", "Agadez", "Tahoua"],
     paymentMethods: ["orange_money", "airtel_money", "bank_card"],
   },
@@ -93,6 +102,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇬🇼",
     dialCode: "+245",
     currency: XOF,
+    timezone: "Africa/Bissau",
     regions: ["Bissau", "Bafatá", "Gabú", "Bissorã"],
     paymentMethods: ["orange_money", "bank_card"],
   },
@@ -104,6 +114,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇳🇬",
     dialCode: "+234",
     currency: { code: "NGN", symbol: "₦", position: "prefix" },
+    timezone: "Africa/Lagos",
     regions: ["Lagos", "Abuja", "Kano", "Ibadan", "Port Harcourt", "Benin City", "Kaduna"],
     paymentMethods: ["bank_card", "airtel_money", "mtn_momo"],
   },
@@ -113,6 +124,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇬🇭",
     dialCode: "+233",
     currency: { code: "GHS", symbol: "GH₵", position: "prefix" },
+    timezone: "Africa/Accra",
     regions: ["Accra", "Kumasi", "Tamale", "Takoradi", "Cape Coast"],
     paymentMethods: ["mtn_momo", "airtel_money", "bank_card"],
   },
@@ -122,6 +134,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇬🇳",
     dialCode: "+224",
     currency: { code: "GNF", symbol: "FG", position: "suffix" },
+    timezone: "Africa/Conakry",
     regions: ["Conakry", "Nzérékoré", "Kankan", "Kindia", "Labé"],
     paymentMethods: ["orange_money", "mtn_momo", "bank_card"],
   },
@@ -133,6 +146,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇨🇲",
     dialCode: "+237",
     currency: XAF,
+    timezone: "Africa/Douala",
     regions: ["Douala", "Yaoundé", "Bafoussam", "Garoua", "Bamenda", "Maroua"],
     paymentMethods: ["mtn_momo", "orange_money", "bank_card"],
   },
@@ -142,6 +156,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇬🇦",
     dialCode: "+241",
     currency: XAF,
+    timezone: "Africa/Libreville",
     regions: ["Libreville", "Port-Gentil", "Franceville", "Oyem"],
     paymentMethods: ["airtel_money", "moov_money", "bank_card"],
   },
@@ -151,6 +166,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇨🇬",
     dialCode: "+242",
     currency: XAF,
+    timezone: "Africa/Brazzaville",
     regions: ["Brazzaville", "Pointe-Noire", "Dolisie", "Nkayi"],
     paymentMethods: ["airtel_money", "mtn_momo", "bank_card"],
   },
@@ -160,6 +176,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇹🇩",
     dialCode: "+235",
     currency: XAF,
+    timezone: "Africa/Ndjamena",
     regions: ["N'Djaména", "Moundou", "Sarh", "Abéché"],
     paymentMethods: ["airtel_money", "bank_card"],
   },
@@ -171,6 +188,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇰🇪",
     dialCode: "+254",
     currency: { code: "KES", symbol: "KSh", position: "prefix" },
+    timezone: "Africa/Nairobi",
     regions: ["Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret"],
     paymentMethods: ["mpesa", "airtel_money", "bank_card"],
   },
@@ -180,6 +198,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇹🇿",
     dialCode: "+255",
     currency: { code: "TZS", symbol: "TSh", position: "prefix" },
+    timezone: "Africa/Dar_es_Salaam",
     regions: ["Dar es Salaam", "Dodoma", "Mwanza", "Arusha", "Zanzibar"],
     paymentMethods: ["mpesa", "airtel_money", "bank_card"],
   },
@@ -189,6 +208,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇺🇬",
     dialCode: "+256",
     currency: { code: "UGX", symbol: "USh", position: "prefix" },
+    timezone: "Africa/Kampala",
     regions: ["Kampala", "Gulu", "Mbarara", "Jinja", "Entebbe"],
     paymentMethods: ["mtn_momo", "airtel_money", "bank_card"],
   },
@@ -198,6 +218,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇷🇼",
     dialCode: "+250",
     currency: { code: "RWF", symbol: "FRw", position: "suffix" },
+    timezone: "Africa/Kigali",
     regions: ["Kigali", "Butare", "Gisenyi", "Ruhengeri"],
     paymentMethods: ["mtn_momo", "airtel_money", "bank_card"],
   },
@@ -207,6 +228,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇪🇹",
     dialCode: "+251",
     currency: { code: "ETB", symbol: "Br", position: "prefix" },
+    timezone: "Africa/Addis_Ababa",
     regions: ["Addis-Abeba", "Dire Dawa", "Mekele", "Gondar", "Hawassa"],
     paymentMethods: ["bank_card"],
   },
@@ -218,6 +240,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇲🇦",
     dialCode: "+212",
     currency: { code: "MAD", symbol: "DH", position: "suffix" },
+    timezone: "Africa/Casablanca",
     regions: ["Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", "Agadir"],
     paymentMethods: ["bank_card"],
   },
@@ -227,6 +250,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇩🇿",
     dialCode: "+213",
     currency: { code: "DZD", symbol: "DA", position: "suffix" },
+    timezone: "Africa/Algiers",
     regions: ["Alger", "Oran", "Constantine", "Annaba", "Blida"],
     paymentMethods: ["bank_card"],
   },
@@ -236,6 +260,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇹🇳",
     dialCode: "+216",
     currency: { code: "TND", symbol: "DT", position: "suffix" },
+    timezone: "Africa/Tunis",
     regions: ["Tunis", "Sfax", "Sousse", "Kairouan", "Bizerte"],
     paymentMethods: ["bank_card"],
   },
@@ -245,6 +270,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇪🇬",
     dialCode: "+20",
     currency: { code: "EGP", symbol: "E£", position: "prefix" },
+    timezone: "Africa/Cairo",
     regions: ["Le Caire", "Alexandrie", "Gizeh", "Louxor", "Assouan"],
     paymentMethods: ["bank_card"],
   },
@@ -256,6 +282,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇿🇦",
     dialCode: "+27",
     currency: { code: "ZAR", symbol: "R", position: "prefix" },
+    timezone: "Africa/Johannesburg",
     regions: ["Johannesburg", "Le Cap", "Durban", "Pretoria", "Port Elizabeth"],
     paymentMethods: ["bank_card"],
   },
@@ -265,6 +292,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇦🇴",
     dialCode: "+244",
     currency: { code: "AOA", symbol: "Kz", position: "suffix" },
+    timezone: "Africa/Luanda",
     regions: ["Luanda", "Huambo", "Lobito", "Benguela"],
     paymentMethods: ["bank_card"],
   },
@@ -274,6 +302,7 @@ export const COUNTRIES: Country[] = [
     flag: "🇲🇿",
     dialCode: "+258",
     currency: { code: "MZN", symbol: "MT", position: "suffix" },
+    timezone: "Africa/Maputo",
     regions: ["Maputo", "Matola", "Beira", "Nampula"],
     paymentMethods: ["mpesa", "bank_card"],
   },
@@ -290,6 +319,11 @@ export function getCountry(code: string | undefined): Country | undefined {
 /** Devise d'un pays, avec repli sur le FCFA (XOF) par défaut. */
 export function currencyForCountry(code: string | undefined): CurrencyConfig {
   return getCountry(code)?.currency ?? XOF;
+}
+
+/** Fuseau horaire IANA d'un pays, avec repli sur GMT (Africa/Bamako). */
+export function timezoneForCountry(code: string | undefined): string {
+  return getCountry(code)?.timezone ?? "Africa/Bamako";
 }
 
 /** Options prêtes pour un <Select>. */

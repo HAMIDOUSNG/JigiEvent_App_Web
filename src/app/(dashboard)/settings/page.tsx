@@ -10,9 +10,15 @@ import { Avatar } from "@/components/ui/Avatar";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useI18n } from "@/i18n/I18nProvider";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/locale";
+import { COUNTRIES } from "@/constants/countries";
 import { useAuthStore } from "@/store/auth";
 import { toast } from "@/store/toast";
 import type { Locale } from "@/types";
+
+// Fuseaux horaires distincts couverts par la plateforme.
+const TIMEZONE_OPTIONS = Array.from(new Set(COUNTRIES.map((c) => c.timezone)))
+  .sort()
+  .map((tz) => ({ value: tz, label: tz }));
 
 function Toggle({ label, description, defaultChecked }: { label: string; description: string; defaultChecked?: boolean }) {
   const [on, setOn] = useState(defaultChecked ?? false);
@@ -98,7 +104,7 @@ export default function SettingsPage() {
               />
             </Field>
             <Field label="Fuseau horaire" className="max-w-xs">
-              <Select options={[{ value: "gmt", label: "GMT (Bamako)" }, { value: "wat", label: "WAT (UTC+1)" }]} />
+              <Select options={TIMEZONE_OPTIONS} />
             </Field>
           </CardBody>
         </Card>

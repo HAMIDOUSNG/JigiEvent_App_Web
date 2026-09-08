@@ -94,6 +94,56 @@ export function formatTime(value: string | Date): string {
   return format(toDate(value), "HH:mm");
 }
 
+// ============================================================
+// Dates avec fuseau horaire (Intl, sans dépendance externe)
+// ============================================================
+const INTL_LOCALES: Record<Locale, string> = { fr: "fr-FR", en: "en-US", ar: "ar" };
+
+/** Formate une date+heure dans un fuseau IANA donné (ex. "Africa/Lagos"). */
+export function formatDateTimeInZone(
+  value: string | Date,
+  timeZone: string,
+  locale: Locale = "fr"
+): string {
+  return new Intl.DateTimeFormat(INTL_LOCALES[locale], {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone,
+  }).format(toDate(value));
+}
+
+/** Formate uniquement l'heure dans un fuseau IANA donné. */
+export function formatTimeInZone(
+  value: string | Date,
+  timeZone: string,
+  locale: Locale = "fr"
+): string {
+  return new Intl.DateTimeFormat(INTL_LOCALES[locale], {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone,
+  }).format(toDate(value));
+}
+
+/**
+ * Abréviation courte du fuseau (ex. "GMT+1", "WAT") pour un fuseau IANA.
+ * Repli silencieux sur le nom du fuseau si l'abréviation n'est pas disponible.
+ */
+export function tzAbbrev(value: string | Date, timeZone: string, locale: Locale = "fr"): string {
+  try {
+    const parts = new Intl.DateTimeFormat(INTL_LOCALES[locale], {
+      timeZone,
+      timeZoneName: "short",
+    }).formatToParts(toDate(value));
+    return parts.find((p) => p.type === "timeZoneName")?.value ?? timeZone;
+  } catch {
+    return timeZone;
+  }
+}
+
 export function timeAgo(value: string | Date, locale: Locale = "fr"): string {
   return formatDistanceToNow(toDate(value), {
     addSuffix: true,
