@@ -1,6 +1,7 @@
 import { mockResolve } from "@/api/client";
 import * as db from "@/mocks/data";
 import * as analytics from "@/mocks/analytics";
+import { countryAmountToReference } from "@/constants/exchange";
 import { applyFilters, applySearch, applySort, paginate, type QueryParams } from "./helpers";
 import type {
   AdminAccount,
@@ -443,7 +444,12 @@ export const analyticsService = {
 // --- Dashboard KPI aggregation ---
 export const dashboardService = {
   superAdminKpis() {
-    const totalRevenue = db.organizations.reduce((s, o) => s + o.revenue, 0);
+    // Les revenus sont exprimés dans la devise de chaque entreprise :
+    // on les convertit en devise de référence avant de les additionner.
+    const totalRevenue = db.organizations.reduce(
+      (s, o) => s + countryAmountToReference(o.revenue, o.countryCode),
+      0
+    );
     const ticketsSold = db.events.reduce((s, e) => s + e.ticketsSold, 0);
     return mockResolve({
       totalUsers: db.endUsers.length * 312, // scaled for realism
@@ -464,9 +470,10 @@ export const dashboardService = {
     const expiringSoon = subs.filter(
       (s) => s.status === "active" && new Date(s.endDate).getTime() <= soon
     ).length;
+    const orgCountry = new Map(db.organizations.map((o) => [o.id, o.countryCode]));
     const subscriptionRevenue = db.subscriptionPayments
       .filter((p) => p.status === "successful")
-      .reduce((s, p) => s + p.amount, 0);
+      .reduce((s, p) => s + countryAmountToReference(p.amount, orgCountry.get(p.organizationId)), 0);
     const activePromotions = db.subscriptionPromotions.filter((p) => p.status === "active").length;
     return mockResolve({
       totalCompanies: db.organizations.length,
