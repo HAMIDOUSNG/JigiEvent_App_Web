@@ -11,6 +11,10 @@ import type {
   Organization,
   Payment,
   Promotion,
+  Subscription,
+  SubscriptionPayment,
+  SubscriptionPlan,
+  SubscriptionPromotion,
   TicketType,
 } from "@/types";
 
@@ -261,6 +265,158 @@ export const promotions: Promotion[] = [
   { id: "promo-4", name: "Étudiants", code: "STUDENT25", discountPercent: 25, startDate: "2026-09-01T00:00:00Z", endDate: "2026-12-31T00:00:00Z", applicableEvents: "Événements sportifs", targetAudience: "Étudiants", status: "active", usageCount: 156, organizationId: "org-4" },
   { id: "promo-5", name: "Lancement plateforme", code: "WELCOME", discountPercent: 30, startDate: "2026-06-01T00:00:00Z", endDate: "2026-06-30T00:00:00Z", applicableEvents: "Tous", targetAudience: "Nouveaux utilisateurs", status: "draft", usageCount: 0 },
 ];
+
+// ============================================================
+// Subscriptions — configurable plans, promotions & history
+// ============================================================
+
+// Give each company login credentials for its Admin space.
+organizations.forEach((org) => {
+  org.loginEmail = org.email;
+  org.password = "jigievent";
+});
+
+/** Default subscription plans. Prices are fully editable from the Super Admin UI. */
+export const subscriptionPlans: SubscriptionPlan[] = [
+  {
+    id: "plan-daily",
+    name: "Journalier",
+    period: "daily",
+    price: 5_000,
+    description: "Accès complet à la publication pour 24 heures.",
+    features: ["Publications illimitées pendant 24h", "Ajout d'images et médias", "Publication d'événements"],
+    status: "active",
+    createdAt: "2026-01-01T09:00:00Z",
+  },
+  {
+    id: "plan-monthly",
+    name: "Mensuel",
+    period: "monthly",
+    price: 50_000,
+    description: "Idéal pour les entreprises actives tout au long du mois.",
+    features: ["Publications illimitées", "Ajout d'images et médias", "Publication d'événements", "Statistiques de base"],
+    status: "active",
+    createdAt: "2026-01-01T09:00:00Z",
+  },
+  {
+    id: "plan-yearly",
+    name: "Annuel",
+    period: "yearly",
+    price: 1_000_000,
+    description: "La meilleure valeur pour une présence continue sur l'année.",
+    features: ["Publications illimitées", "Ajout d'images et médias", "Publication d'événements", "Statistiques avancées", "Support prioritaire"],
+    status: "active",
+    createdAt: "2026-01-01T09:00:00Z",
+  },
+];
+
+export const subscriptionPromotions: SubscriptionPromotion[] = [
+  {
+    id: "spromo-1",
+    name: "Promo de Décembre",
+    period: "monthly",
+    discountType: "fixed",
+    promoPrice: 40_000,
+    startDate: "2026-12-01T00:00:00Z",
+    endDate: "2026-12-15T00:00:00Z",
+    status: "scheduled",
+    createdAt: "2026-09-01T09:00:00Z",
+  },
+  {
+    id: "spromo-2",
+    name: "Rentrée -20%",
+    period: "yearly",
+    discountType: "percent",
+    discountPercent: 20,
+    startDate: "2026-09-01T00:00:00Z",
+    endDate: "2026-09-30T00:00:00Z",
+    status: "active",
+    createdAt: "2026-08-15T09:00:00Z",
+  },
+  {
+    id: "spromo-3",
+    name: "Journée découverte",
+    period: "daily",
+    discountType: "percent",
+    discountPercent: 50,
+    startDate: "2026-05-01T00:00:00Z",
+    endDate: "2026-05-31T00:00:00Z",
+    status: "ended",
+    createdAt: "2026-04-15T09:00:00Z",
+  },
+];
+
+const PLAN_BY_ORG = ["plan-yearly", "plan-monthly", "plan-yearly", "plan-monthly", "plan-yearly", "plan-monthly"] as const;
+// Subscription end dates chosen to exercise active / expiring-soon / expired states.
+const SUB_END = [
+  "2027-06-30T00:00:00Z", // active (far)
+  "2026-09-25T00:00:00Z", // expiring soon (~17 days from 2026-09-08)
+  "2027-02-20T00:00:00Z", // active
+  "2026-09-15T00:00:00Z", // expiring soon
+  "2026-12-31T00:00:00Z", // active
+  "2026-07-10T00:00:00Z", // expired
+];
+
+export const subscriptions: Subscription[] = organizations.map((org, i) => {
+  const planId = PLAN_BY_ORG[i];
+  const plan = subscriptionPlans.find((p) => p.id === planId)!;
+  const endDate = SUB_END[i];
+  const expired = new Date(endDate).getTime() < Date.now();
+  const status = org.status === "suspended" ? "suspended" : expired ? "expired" : "active";
+  // org-2 subscribed during the yearly promo -> paid the promo price.
+  const appliedPromotionId = i === 4 ? "spromo-2" : undefined;
+  const pricePaid = appliedPromotionId ? Math.round(plan.price * 0.8) : plan.price;
+  return {
+    id: `sub-${i + 1}`,
+    organizationId: org.id,
+    organizationName: org.name,
+    planId: plan.id,
+    planName: plan.name,
+    period: plan.period,
+    pricePaid,
+    startDate: org.createdAt,
+    endDate,
+    status,
+    appliedPromotionId,
+    createdAt: org.createdAt,
+  };
+});
+
+// Payment history: an initial payment + one renewal for a few companies.
+export const subscriptionPayments: SubscriptionPayment[] = subscriptions.flatMap((sub, i) => {
+  const rows: SubscriptionPayment[] = [
+    {
+      id: `spay-${i + 1}-1`,
+      subscriptionId: sub.id,
+      organizationId: sub.organizationId,
+      organizationName: sub.organizationName,
+      planName: sub.planName,
+      period: sub.period,
+      amount: sub.pricePaid,
+      method: "orange_money",
+      status: "successful",
+      promotionName: sub.appliedPromotionId ? "Rentrée -20%" : undefined,
+      paidAt: sub.startDate,
+    },
+  ];
+  // Add a renewal for even-indexed companies.
+  if (i % 2 === 0) {
+    const renewalDate = new Date(new Date(sub.startDate).getTime() + 90 * 24 * 60 * 60 * 1000);
+    rows.push({
+      id: `spay-${i + 1}-2`,
+      subscriptionId: sub.id,
+      organizationId: sub.organizationId,
+      organizationName: sub.organizationName,
+      planName: sub.planName,
+      period: sub.period,
+      amount: sub.pricePaid,
+      method: i % 4 === 0 ? "moov_money" : "bank_card",
+      status: "successful",
+      paidAt: renewalDate.toISOString(),
+    });
+  }
+  return rows;
+});
 
 export const notifications: NotificationCampaign[] = [
   { id: "ntf-1", title: "Afrobeat Festival — billets en vente", message: "Les billets pour l'Afrobeat Festival sont disponibles !", channel: "push", audience: "Tous les utilisateurs", scheduledAt: "2026-09-10T08:00:00Z", status: "sent", reach: 12_450 },

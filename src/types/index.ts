@@ -44,6 +44,13 @@ export type TicketStatus = "on_sale" | "sold_out" | "paused" | "ended";
 
 export type PromotionStatus = "active" | "scheduled" | "ended" | "draft";
 
+// --- Subscriptions ---
+export type SubscriptionPeriod = "daily" | "monthly" | "yearly";
+
+export type PlanStatus = "active" | "inactive";
+
+export type SubscriptionStatus = "active" | "expired" | "suspended";
+
 export type NotificationChannel = "push" | "sms" | "email" | "in_app";
 
 export type ContentStatus = "draft" | "published" | "archived";
@@ -80,6 +87,10 @@ export interface Organization {
   revenue: number;
   createdAt: string;
   logo?: string;
+  /** Login credentials for the company Admin account created by the Super Admin. */
+  loginEmail?: string;
+  /** Stored for mock/demo only. A real backend must never store plaintext. */
+  password?: string;
 }
 
 export interface AdminAccount {
@@ -204,6 +215,69 @@ export interface Promotion {
   status: PromotionStatus;
   usageCount: number;
   organizationId?: string;
+}
+
+// --- Subscription plans (configurable by Super Admin) ---
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  period: SubscriptionPeriod;
+  /** Base price in FCFA, fully editable from the Super Admin UI. */
+  price: number;
+  description: string;
+  features: string[];
+  status: PlanStatus;
+  createdAt: string;
+}
+
+// --- Promotions applied to subscription plans ---
+export interface SubscriptionPromotion {
+  id: string;
+  name: string;
+  /** The subscription period this promotion targets. */
+  period: SubscriptionPeriod;
+  /** Either a percentage discount OR a fixed promotional price. */
+  discountType: "percent" | "fixed";
+  discountPercent?: number;
+  promoPrice?: number;
+  startDate: string;
+  endDate: string;
+  status: PromotionStatus;
+  createdAt: string;
+}
+
+// --- A company's active/past subscription ---
+export interface Subscription {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  planId: string;
+  planName: string;
+  period: SubscriptionPeriod;
+  /** Amount actually paid (after any promotion). */
+  pricePaid: number;
+  startDate: string;
+  endDate: string;
+  status: SubscriptionStatus;
+  /** Id of the promotion applied at purchase time, if any. */
+  appliedPromotionId?: string;
+  createdAt: string;
+}
+
+// --- Payment made against a subscription ---
+export interface SubscriptionPayment {
+  id: string;
+  subscriptionId: string;
+  organizationId: string;
+  organizationName: string;
+  planName: string;
+  period: SubscriptionPeriod;
+  amount: number;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  /** Promotion applied on this payment, if any. */
+  promotionName?: string;
+  paidAt: string;
 }
 
 export interface NotificationCampaign {
