@@ -8,8 +8,10 @@ import { StatCard } from "@/components/ui/StatCard";
 import { Card, CardHeader, CardTitle, CardBody } from "@/components/ui/Card";
 import { RevenueAreaChart, HorizontalBarChart, DonutChart, CHART_PALETTE } from "@/components/charts";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { analyticsService, dashboardService } from "@/services";
+import { analyticsService, dashboardService, organizationService } from "@/services";
 import { formatCurrency, formatCurrencyCompact } from "@/utils/format";
+import { REFERENCE_CURRENCY } from "@/constants/exchange";
+import { currencyForCountry } from "@/constants/countries";
 import { useAuthStore } from "@/store/auth";
 import { cn } from "@/utils/cn";
 
@@ -37,12 +39,23 @@ export default function RevenuePage() {
     queryFn: () => dashboardService.adminKpis(user!.organizationId!),
     enabled: !isSA && !!user?.organizationId,
   });
+  const { data: myOrg } = useQuery({
+    queryKey: ["revenue-org", user?.organizationId],
+    queryFn: () => organizationService.get(user!.organizationId!),
+    enabled: !isSA && !!user?.organizationId,
+  });
 
   const gross = isSA ? saKpis?.totalRevenue ?? 0 : admKpis?.revenue ?? 0;
   const commission = Math.round(gross * 0.12);
   const orgRevenue = gross - commission;
   const refunds = Math.round(gross * 0.02);
   const net = gross - refunds;
+
+  // SA : montants déjà consolidés en devise de référence (XOF).
+  // Admin : montants dans la devise de son pays.
+  const currency = isSA ? REFERENCE_CURRENCY : currencyForCountry(myOrg?.countryCode);
+  const money = (v: number) => formatCurrencyCompact(v, currency);
+  const saHint = isSA ? `Consolidé en ${REFERENCE_CURRENCY.symbol}` : undefined;
 
   return (
     <div className="space-y-5">
@@ -67,12 +80,12 @@ export default function RevenuePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard label="Revenu brut" value={formatCurrencyCompact(gross)} icon={TrendingUp} tone="primary" trend={{ value: 9.8, positive: true }} />
-        {isSA && <StatCard label="Revenu plateforme" value={formatCurrencyCompact(commission)} icon={Landmark} tone="secondary" />}
-        <StatCard label={isSA ? "Revenu organisations" : "Votre revenu"} value={formatCurrencyCompact(orgRevenue)} icon={Building2} tone="accent" />
-        <StatCard label="Commission (12%)" value={formatCurrencyCompact(commission)} icon={Percent} tone="info" />
-        <StatCard label="Remboursements" value={formatCurrencyCompact(refunds)} icon={RotateCcw} tone="primary" trend={{ value: 1.2, positive: false }} />
-        <StatCard label="Revenu net" value={formatCurrencyCompact(net)} icon={Wallet} tone="secondary" />
+        <StatCard label="Revenu brut" value={money(gross)} icon={TrendingUp} tone="primary" trend={{ value: 9.8, positive: true }} hint={saHint} />
+        {isSA && <StatCard label="Revenu plateforme" value={money(commission)} icon={Landmark} tone="secondary" hint={saHint} />}
+        <StatCard label={isSA ? "Revenu organisations" : "Votre revenu"} value={money(orgRevenue)} icon={Building2} tone="accent" hint={saHint} />
+        <StatCard label="Commission (12%)" value={money(commission)} icon={Percent} tone="info" />
+        <StatCard label="Remboursements" value={money(refunds)} icon={RotateCcw} tone="primary" trend={{ value: 1.2, positive: false }} />
+        <StatCard label="Revenu net" value={money(net)} icon={Wallet} tone="secondary" />
       </div>
 
       <Card>

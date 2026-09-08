@@ -5,8 +5,8 @@ import { Menu, Search, Bell, HelpCircle, LogOut, User, Settings, Globe } from "l
 import { Avatar } from "@/components/ui/Avatar";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { useI18n } from "@/i18n/I18nProvider";
+import { LOCALES, LOCALE_LABELS } from "@/i18n/locale";
 import { useAuthStore } from "@/store/auth";
-import type { Locale } from "@/types";
 
 export function Topbar({
   onOpenSidebar,
@@ -49,7 +49,7 @@ export function Topbar({
         </kbd>
       </button>
 
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ms-auto flex items-center gap-1">
         {/* Language */}
         <Dropdown
           trigger={
@@ -58,10 +58,10 @@ export function Topbar({
               <span className="hidden uppercase sm:inline">{locale}</span>
             </span>
           }
-          items={[
-            { label: "Français", onClick: () => setLocale("fr" as Locale) },
-            { label: "English", onClick: () => setLocale("en" as Locale) },
-          ]}
+          items={LOCALES.map((l) => ({
+            label: LOCALE_LABELS[l],
+            onClick: () => setLocale(l),
+          }))}
         />
 
         {/* Help */}

@@ -23,13 +23,16 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/States";
 import { SkeletonCards } from "@/components/ui/Skeleton";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { eventService } from "@/services";
+import { useI18n } from "@/i18n/I18nProvider";
+import { eventService, organizationService } from "@/services";
 import { EVENT_STATUS, ORDER_STATUS, TICKET_STATUS } from "@/constants/status";
 import { categories, eventTypes } from "@/mocks/data";
+import { timezoneForCountry } from "@/constants/countries";
 import {
   formatCurrency,
   formatCurrencyCompact,
-  formatDateTime,
+  formatDateTimeInZone,
+  tzAbbrev,
   formatNumber,
   timeAgo,
 } from "@/utils/format";
@@ -39,12 +42,20 @@ export default function EventDetailPage({ params }: PageProps<"/events/[id]">) {
   const router = useRouter();
   const { id } = use(params);
 
+  const { locale } = useI18n();
   const { data: evt, isLoading } = useQuery({ queryKey: ["event", id], queryFn: () => eventService.get(id) });
   const { data: tickets } = useQuery({ queryKey: ["event-tickets", id], queryFn: () => eventService.ticketsFor(id) });
   const { data: recentOrders } = useQuery({ queryKey: ["event-orders", id], queryFn: () => eventService.ordersFor(id) });
+  const { data: org } = useQuery({
+    queryKey: ["event-org", evt?.organizationId],
+    queryFn: () => organizationService.get(evt!.organizationId),
+    enabled: !!evt?.organizationId,
+  });
 
   if (isLoading) return <SkeletonCards count={4} />;
   if (!evt) return <EmptyState title="Événement introuvable" />;
+
+  const timeZone = timezoneForCountry(org?.countryCode);
 
   const remaining = evt.ticketsTotal - evt.ticketsSold;
   const catName = categories.find((c) => c.id === evt.categoryId)?.name ?? evt.categoryId;
@@ -75,7 +86,7 @@ export default function EventDetailPage({ params }: PageProps<"/events/[id]">) {
           </div>
         </div>
         <CardBody className="flex flex-wrap gap-x-8 gap-y-3">
-          <span className="inline-flex items-center gap-2 text-sm text-foreground-soft"><CalendarDays className="h-4 w-4 text-muted" />{formatDateTime(evt.startDate)}</span>
+          <span className="inline-flex items-center gap-2 text-sm text-foreground-soft"><CalendarDays className="h-4 w-4 text-muted" />{formatDateTimeInZone(evt.startDate, timeZone, locale)} <span className="text-caption">({tzAbbrev(evt.startDate, timeZone, locale)})</span></span>
           <span className="inline-flex items-center gap-2 text-sm text-foreground-soft"><MapPin className="h-4 w-4 text-muted" />{evt.address}</span>
           <span className="inline-flex items-center gap-2 text-sm text-foreground-soft"><Tag className="h-4 w-4 text-muted" />{typeName}</span>
         </CardBody>

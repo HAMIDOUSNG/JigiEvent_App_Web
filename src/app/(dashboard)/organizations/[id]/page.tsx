@@ -19,6 +19,7 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { organizationService, licenseService, subscriptionService } from "@/services";
 import { ENTITY_STATUS, LICENSE_STATUS, SUBSCRIPTION_STATUS, SUBSCRIPTION_PERIOD, PAYMENT_METHOD_LABEL, PAYMENT_STATUS } from "@/constants/status";
 import { categories } from "@/mocks/data";
+import { getCountry, currencyForCountry, timezoneForCountry } from "@/constants/countries";
 import { formatCurrency, formatCurrencyCompact, formatDate, daysUntil } from "@/utils/format";
 
 export default function OrganizationDetailPage({ params }: PageProps<"/organizations/[id]">) {
@@ -40,6 +41,9 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
   if (!org) return <EmptyState title="Organisation introuvable" />;
 
   const catName = categories.find((c) => c.id === org.categoryId)?.name ?? org.categoryId;
+  const country = getCountry(org.countryCode);
+  const currency = currencyForCountry(org.countryCode);
+  const timeZone = timezoneForCountry(org.countryCode);
 
   return (
     <div className="space-y-5">
@@ -59,7 +63,7 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Événements" value={String(org.eventsCount)} icon={CalendarDays} tone="primary" />
-        <StatCard label="Chiffre d'affaires" value={formatCurrencyCompact(org.revenue)} icon={TrendingUp} tone="secondary" />
+        <StatCard label="Chiffre d'affaires" value={formatCurrencyCompact(org.revenue, currency)} icon={TrendingUp} tone="secondary" />
         <StatCard label="Statut licence" value={license?.type ?? "—"} icon={CalendarDays} tone="accent" />
       </div>
 
@@ -77,6 +81,9 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
                 value={<Badge tone={org.type === "public" ? "info" : "neutral"} dot={false}>{org.type === "public" ? "Publique" : "Privée"}</Badge>}
               />
               <DetailRow label="Statut" value={<StatusBadge meta={ENTITY_STATUS[org.status]} />} />
+              <DetailRow label="Pays" value={country ? `${country.flag} ${country.name}` : org.countryCode} />
+              <DetailRow label="Devise" value={`${currency.symbol} (${currency.code})`} />
+              <DetailRow label="Fuseau horaire" value={timeZone} />
               <DetailRow label="Région" value={`${org.city}, ${org.region}`} />
               <DetailRow label="Adresse" value={<span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-muted" />{org.address}</span>} />
               <DetailRow label="Téléphone" value={<span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted" />{org.phone}</span>} />
@@ -109,7 +116,7 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
                   <StatusBadge meta={SUBSCRIPTION_STATUS[subscription.status]} />
                 </div>
                 <DetailRow label="Formule" value={SUBSCRIPTION_PERIOD[subscription.period].labelFr} />
-                <DetailRow label="Prix payé" value={formatCurrency(subscription.pricePaid)} />
+                <DetailRow label="Prix payé" value={formatCurrency(subscription.pricePaid, currency)} />
                 <DetailRow label="Début" value={formatDate(subscription.startDate)} />
                 <DetailRow label="Expiration" value={formatDate(subscription.endDate)} />
                 <DetailRow
@@ -129,7 +136,7 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
                   <StatusBadge meta={LICENSE_STATUS[license.status]} />
                 </div>
                 <DetailRow label="Fin de licence" value={formatDate(license.endDate)} />
-                <DetailRow label="Revenu associé" value={formatCurrency(license.revenue)} />
+                <DetailRow label="Revenu associé" value={formatCurrency(license.revenue, currency)} />
               </CardBody>
             </Card>
           )}
@@ -154,7 +161,7 @@ export default function OrganizationDetailPage({ params }: PageProps<"/organizat
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold text-foreground">{formatCurrency(p.amount)}</span>
+                    <span className="font-semibold text-foreground">{formatCurrency(p.amount, currency)}</span>
                     <StatusBadge meta={PAYMENT_STATUS[p.status]} />
                   </div>
                 </div>

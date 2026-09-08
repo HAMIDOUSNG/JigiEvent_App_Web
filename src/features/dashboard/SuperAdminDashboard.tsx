@@ -57,8 +57,8 @@ export function SuperAdminDashboard() {
           <StatCard label={t("kpi.totalAdmins")} value={String(kpis.totalAdmins)} icon={ShieldCheck} tone="secondary" trend={{ value: 3.1, positive: true }} />
           <StatCard label={t("kpi.totalEvents")} value={String(kpis.totalEvents)} icon={CalendarDays} tone="accent" trend={{ value: 8.7, positive: true }} />
           <StatCard label={t("kpi.ticketsSold")} value={formatCompactNumber(kpis.ticketsSold)} icon={Ticket} tone="info" trend={{ value: 15.2, positive: true }} />
-          <StatCard label={t("kpi.totalRevenue")} value={formatCurrencyCompact(kpis.totalRevenue)} icon={TrendingUp} tone="primary" trend={{ value: 9.8, positive: true }} />
-          <StatCard label={t("kpi.commission")} value={formatCurrencyCompact(kpis.commission)} icon={Percent} tone="secondary" hint="12% des ventes" />
+          <StatCard label={t("kpi.totalRevenue")} value={formatCurrencyCompact(kpis.totalRevenue)} icon={TrendingUp} tone="primary" trend={{ value: 9.8, positive: true }} hint="Consolidé en FCFA" />
+          <StatCard label={t("kpi.commission")} value={formatCurrencyCompact(kpis.commission)} icon={Percent} tone="secondary" hint="12% · consolidé FCFA" />
           <StatCard label={t("kpi.activeLicenses")} value={String(kpis.activeLicenses)} icon={KeyRound} tone="accent" />
           <StatCard label={t("kpi.pendingEvents")} value={String(kpis.pendingEvents)} icon={Clock} tone="info" hint="à valider" />
         </div>
@@ -73,7 +73,7 @@ export function SuperAdminDashboard() {
             <StatCard label="Abonnements actifs" value={String(subKpis.activeSubscriptions)} icon={BadgeCheck} tone="secondary" />
             <StatCard label="Abonnements expirés" value={String(subKpis.expiredSubscriptions)} icon={XCircle} tone="info" hint="publication bloquée" />
             <StatCard label="Expirent bientôt" value={String(subKpis.expiringSoon)} icon={Clock} tone="accent" hint="≤ 30 jours" />
-            <StatCard label="Revenus abonnements" value={formatCurrencyCompact(subKpis.subscriptionRevenue)} icon={TrendingUp} tone="primary" />
+            <StatCard label="Revenus abonnements" value={formatCurrencyCompact(subKpis.subscriptionRevenue)} icon={TrendingUp} tone="primary" hint="Consolidé en FCFA" />
             <StatCard label="Promotions actives" value={String(subKpis.activePromotions)} icon={Megaphone} tone="secondary" />
           </div>
         </div>

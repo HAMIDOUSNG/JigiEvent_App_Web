@@ -1,10 +1,12 @@
 import type { Locale } from "@/types";
 
 // Flat dictionary keyed by dotted path. Kept simple & typed.
+// The French dictionary is the source of truth for the set of keys;
+// English and Arabic must provide the same keys.
 export const dictionaries = {
   fr: {
     "common.search": "Rechercher",
-    "common.searchPlaceholder": "Rechercher dans Horizon360…",
+    "common.searchPlaceholder": "Rechercher dans JigiEvent…",
     "common.all": "Tous",
     "common.filters": "Filtres",
     "common.export": "Exporter",
@@ -43,7 +45,7 @@ export const dictionaries = {
 
     "dashboard.title": "Tableau de bord",
     "dashboard.welcome": "Bienvenue",
-    "dashboard.overview": "Vue d'ensemble de la plateforme Horizon360.",
+    "dashboard.overview": "Vue d'ensemble de la plateforme JigiEvent.",
 
     "kpi.totalUsers": "Utilisateurs",
     "kpi.totalAdmins": "Admins",
@@ -65,11 +67,14 @@ export const dictionaries = {
     "login.remember": "Se souvenir de moi",
     "login.forgot": "Mot de passe oublié ?",
     "login.submit": "Se connecter",
+    "login.success": "Connexion réussie",
     "login.tagline": "La plateforme de gestion événementielle africaine",
+
+    "settings.languageUpdated": "Langue mise à jour",
   },
   en: {
     "common.search": "Search",
-    "common.searchPlaceholder": "Search Horizon360…",
+    "common.searchPlaceholder": "Search JigiEvent…",
     "common.all": "All",
     "common.filters": "Filters",
     "common.export": "Export",
@@ -108,7 +113,7 @@ export const dictionaries = {
 
     "dashboard.title": "Dashboard",
     "dashboard.welcome": "Welcome",
-    "dashboard.overview": "Overview of the Horizon360 platform.",
+    "dashboard.overview": "Overview of the JigiEvent platform.",
 
     "kpi.totalUsers": "Users",
     "kpi.totalAdmins": "Admins",
@@ -130,12 +135,83 @@ export const dictionaries = {
     "login.remember": "Remember me",
     "login.forgot": "Forgot password?",
     "login.submit": "Sign in",
+    "login.success": "Signed in",
     "login.tagline": "The African event management platform",
+
+    "settings.languageUpdated": "Language updated",
+  },
+  ar: {
+    "common.search": "بحث",
+    "common.searchPlaceholder": "ابحث في JigiEvent…",
+    "common.all": "الكل",
+    "common.filters": "عوامل التصفية",
+    "common.export": "تصدير",
+    "common.actions": "إجراءات",
+    "common.view": "عرض",
+    "common.edit": "تعديل",
+    "common.delete": "حذف",
+    "common.cancel": "إلغاء",
+    "common.confirm": "تأكيد",
+    "common.save": "حفظ",
+    "common.create": "إنشاء",
+    "common.status": "الحالة",
+    "common.date": "التاريخ",
+    "common.loading": "جارٍ التحميل…",
+    "common.noResults": "لا توجد نتائج",
+    "common.rowsPerPage": "صفوف لكل صفحة",
+    "common.of": "من",
+    "common.previous": "السابق",
+    "common.next": "التالي",
+    "common.retry": "إعادة المحاولة",
+    "common.logout": "تسجيل الخروج",
+    "common.profile": "الملف الشخصي",
+    "common.help": "مساعدة",
+    "common.language": "اللغة",
+    "common.notifications": "الإشعارات",
+    "common.viewAll": "عرض الكل",
+    "common.total": "المجموع",
+    "common.revenue": "الإيرادات",
+
+    "error.title": "حدث خطأ ما.",
+    "error.subtitle": "يرجى المحاولة مرة أخرى.",
+    "empty.title": "لا توجد بيانات",
+
+    "nav.superadmin": "المشرف العام",
+    "nav.admin": "مدير",
+
+    "dashboard.title": "لوحة التحكم",
+    "dashboard.welcome": "مرحباً",
+    "dashboard.overview": "نظرة عامة على منصة JigiEvent.",
+
+    "kpi.totalUsers": "المستخدمون",
+    "kpi.totalAdmins": "المديرون",
+    "kpi.totalEvents": "الفعاليات",
+    "kpi.ticketsSold": "التذاكر المباعة",
+    "kpi.totalRevenue": "إجمالي الإيرادات",
+    "kpi.commission": "عمولة المنصة",
+    "kpi.activeLicenses": "التراخيص النشطة",
+    "kpi.pendingEvents": "فعاليات قيد الانتظار",
+    "kpi.myEvents": "فعالياتي",
+    "kpi.pendingOrders": "طلبات قيد الانتظار",
+    "kpi.upcomingEvents": "الفعاليات القادمة",
+    "kpi.ticketsAvailable": "التذاكر المتاحة",
+
+    "login.title": "تسجيل الدخول",
+    "login.subtitle": "ادخل إلى مساحة الإدارة الخاصة بك",
+    "login.email": "البريد الإلكتروني",
+    "login.password": "كلمة المرور",
+    "login.remember": "تذكرني",
+    "login.forgot": "هل نسيت كلمة المرور؟",
+    "login.submit": "تسجيل الدخول",
+    "login.success": "تم تسجيل الدخول",
+    "login.tagline": "منصة إدارة الفعاليات الأفريقية",
+
+    "settings.languageUpdated": "تم تحديث اللغة",
   },
 } as const;
 
 export type TranslationKey = keyof (typeof dictionaries)["fr"];
 
 export function translate(locale: Locale, key: TranslationKey): string {
-  return dictionaries[locale][key] ?? key;
+  return dictionaries[locale][key] ?? dictionaries.fr[key] ?? key;
 }

@@ -14,7 +14,8 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useListQuery } from "@/hooks/useListQuery";
 import { organizationService } from "@/services";
 import { ENTITY_STATUS } from "@/constants/status";
-import { categories, REGIONS } from "@/mocks/data";
+import { categories } from "@/mocks/data";
+import { COUNTRY_OPTIONS, getCountry, currencyForCountry } from "@/constants/countries";
 import { formatCurrency } from "@/utils/format";
 import { exportToCsv } from "@/utils/export";
 import { toast } from "@/store/toast";
@@ -49,6 +50,14 @@ export default function OrganizationsPage() {
     },
     { key: "categoryId", header: "Catégorie", render: (o) => catName(o.categoryId) },
     {
+      key: "countryCode",
+      header: "Pays",
+      render: (o) => {
+        const c = getCountry(o.countryCode);
+        return c ? <span>{c.flag} {c.name}</span> : o.countryCode;
+      },
+    },
+    {
       key: "type",
       header: "Type",
       render: (o) => (
@@ -60,7 +69,7 @@ export default function OrganizationsPage() {
     { key: "region", header: "Région", render: (o) => `${o.city}, ${o.region}` },
     { key: "adminName", header: "Admin", render: (o) => o.adminName },
     { key: "eventsCount", header: "Événements", sortable: true, align: "right", render: (o) => o.eventsCount },
-    { key: "revenue", header: "Chiffre d'affaires", sortable: true, align: "right", render: (o) => <span className="font-semibold">{formatCurrency(o.revenue)}</span> },
+    { key: "revenue", header: "Chiffre d'affaires", sortable: true, align: "right", render: (o) => <span className="font-semibold">{formatCurrency(o.revenue, currencyForCountry(o.countryCode))}</span> },
     { key: "status", header: "Statut", render: (o) => <StatusBadge meta={ENTITY_STATUS[o.status]} /> },
   ];
 
@@ -103,11 +112,11 @@ export default function OrganizationsPage() {
             onChange: (v) => list.setFilter("type", v),
           },
           {
-            key: "region",
-            placeholder: "Toutes régions",
-            value: list.filters.region ?? "all",
-            options: REGIONS.map((r) => ({ value: r, label: r })),
-            onChange: (v) => list.setFilter("region", v),
+            key: "countryCode",
+            placeholder: "Tous pays",
+            value: list.filters.countryCode ?? "all",
+            options: COUNTRY_OPTIONS,
+            onChange: (v) => list.setFilter("countryCode", v),
           },
         ]}
       />

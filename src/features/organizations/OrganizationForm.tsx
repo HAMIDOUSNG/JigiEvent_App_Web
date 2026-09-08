@@ -11,7 +11,8 @@ import { Card, CardHeader, CardTitle, CardBody } from "@/components/ui/Card";
 import { Input, Select, Field } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
-import { categories, REGIONS } from "@/mocks/data";
+import { categories } from "@/mocks/data";
+import { COUNTRIES, COUNTRY_OPTIONS, DEFAULT_COUNTRY_CODE, getCountry, timezoneForCountry } from "@/constants/countries";
 import { organizationService, planService } from "@/services";
 import { ENTITY_STATUS, SUBSCRIPTION_PERIOD_SUFFIX } from "@/constants/status";
 import { formatCurrency } from "@/utils/format";
@@ -22,6 +23,7 @@ const schema = z.object({
   name: z.string().min(2, "Le nom de l'entreprise est requis."),
   categoryId: z.string().min(1, "Sélectionnez une catégorie."),
   type: z.enum(["private", "public"]),
+  countryCode: z.string().min(1, "Sélectionnez un pays."),
   phone: z.string().min(6, "Numéro de téléphone requis."),
   email: z.string().email("E-mail invalide."),
   region: z.string().min(1, "Sélectionnez une région."),
@@ -56,6 +58,8 @@ export function OrganizationForm({
     register,
     handleSubmit,
     watch,
+    getValues,
+    setValue,
     formState: { errors },
   } = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
@@ -63,6 +67,7 @@ export function OrganizationForm({
       name: organization?.name ?? "",
       categoryId: organization?.categoryId ?? "",
       type: organization?.type ?? "private",
+      countryCode: organization?.countryCode ?? DEFAULT_COUNTRY_CODE,
       phone: organization?.phone ?? "",
       email: organization?.email ?? "",
       region: organization?.region ?? "",
@@ -76,6 +81,19 @@ export function OrganizationForm({
 
   const activePlans = (plans ?? []).filter((p) => p.status === "active");
   const nameValue = watch("name");
+  const countryCode = watch("countryCode");
+  const country = getCountry(countryCode) ?? COUNTRIES[0];
+
+  function onCountryChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const next = e.target.value;
+    setValue("countryCode", next, { shouldValidate: true });
+    // La région dépend du pays : on réinitialise si elle n'appartient plus au nouveau pays.
+    const nextCountry = getCountry(next);
+    const currentRegion = getValues("region");
+    if (nextCountry && !nextCountry.regions.includes(currentRegion)) {
+      setValue("region", "", { shouldValidate: false });
+    }
+  }
 
   function onLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -161,10 +179,10 @@ export function OrganizationForm({
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Numéro de téléphone" required error={errors.phone?.message}>
-              <Input {...register("phone")} placeholder="+223 70 00 00 00" />
+              <Input {...register("phone")} placeholder={`${country.dialCode} 70 00 00 00`} />
             </Field>
             <Field label="Adresse e-mail" required error={errors.email?.message}>
-              <Input type="email" {...register("email")} placeholder="contact@entreprise.ml" />
+              <Input type="email" {...register("email")} placeholder="contact@entreprise.com" />
             </Field>
           </div>
         </CardBody>
@@ -175,19 +193,33 @@ export function OrganizationForm({
         <CardHeader><CardTitle>Localisation</CardTitle></CardHeader>
         <CardBody className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field
+              label="Pays"
+              required
+              error={errors.countryCode?.message}
+              hint={`Devise : ${country.currency.symbol} (${country.currency.code}) · Fuseau : ${timezoneForCountry(country.code)}`}
+            >
+              <Select
+                value={countryCode}
+                onChange={onCountryChange}
+                options={COUNTRY_OPTIONS}
+              />
+            </Field>
             <Field label="Région" required error={errors.region?.message}>
               <Select
                 {...register("region")}
-                options={[{ value: "", label: "Sélectionner…" }, ...REGIONS.map((r) => ({ value: r, label: r }))]}
+                options={[{ value: "", label: "Sélectionner…" }, ...country.regions.map((r) => ({ value: r, label: r }))]}
               />
             </Field>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Ville" required error={errors.city?.message}>
               <Input {...register("city")} placeholder="Ex. Bamako" />
             </Field>
+            <Field label="Adresse" required error={errors.address?.message}>
+              <Input {...register("address")} placeholder="Ex. Av. de l'Indépendance" />
+            </Field>
           </div>
-          <Field label="Adresse" required error={errors.address?.message}>
-            <Input {...register("address")} placeholder="Ex. Av. de l'Indépendance" />
-          </Field>
         </CardBody>
       </Card>
 
@@ -243,7 +275,7 @@ export function OrganizationForm({
                   { value: "", label: "Aucun pour le moment" },
                   ...activePlans.map((p) => ({
                     value: p.id,
-                    label: `${p.name} — ${formatCurrency(p.price)} / ${SUBSCRIPTION_PERIOD_SUFFIX[p.period]}`,
+                    label: `${p.name} — ${formatCurrency(p.price, country.currency)} / ${SUBSCRIPTION_PERIOD_SUFFIX[p.period]}`,
                   })),
                 ]}
               />
