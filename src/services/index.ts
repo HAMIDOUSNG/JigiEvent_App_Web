@@ -33,6 +33,7 @@ export interface OrganizationInput {
   name: string;
   categoryId: string;
   type?: OrgType;
+  countryCode: string;
   region: string;
   city: string;
   address: string;
@@ -205,6 +206,7 @@ export const organizationService = {
       name: input.name,
       categoryId: input.categoryId,
       type: input.type ?? "private",
+      countryCode: input.countryCode,
       region: input.region,
       city: input.city,
       address: input.address,

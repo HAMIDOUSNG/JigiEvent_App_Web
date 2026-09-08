@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useI18n } from "@/i18n/I18nProvider";
+import { LOCALES, LOCALE_LABELS } from "@/i18n/locale";
 import { useAuthStore } from "@/store/auth";
 import { toast } from "@/store/toast";
 import type { Locale } from "@/types";
@@ -83,8 +84,8 @@ export default function SettingsPage() {
             <Field label={t("common.language")} className="max-w-xs">
               <Select
                 value={locale}
-                onChange={(e) => { setLocale(e.target.value as Locale); toast.success("Langue mise à jour"); }}
-                options={[{ value: "fr", label: "Français" }, { value: "en", label: "English" }]}
+                onChange={(e) => { setLocale(e.target.value as Locale); toast.success(t("settings.languageUpdated")); }}
+                options={LOCALES.map((l) => ({ value: l, label: LOCALE_LABELS[l] }))}
               />
             </Field>
             <Field label="Devise" className="max-w-xs">

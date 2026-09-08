@@ -4,7 +4,7 @@
 
 export type Role = "SUPER_ADMIN" | "ADMIN";
 
-export type Locale = "fr" | "en";
+export type Locale = "fr" | "en" | "ar";
 
 // --- Auth / User (back-office account) ---
 export interface AuthUser {
@@ -32,7 +32,16 @@ export type OrderStatus = "pending" | "paid" | "failed" | "cancelled" | "refunde
 
 export type PaymentStatus = "pending" | "successful" | "failed" | "refunded";
 
-export type PaymentMethod = "orange_money" | "moov_money" | "bank_card" | "other";
+export type PaymentMethod =
+  | "orange_money"
+  | "moov_money"
+  | "mtn_momo"
+  | "wave"
+  | "free_money"
+  | "airtel_money"
+  | "mpesa"
+  | "bank_card"
+  | "other";
 
 export type LicenseStatus = "active" | "expiring_soon" | "expired" | "suspended";
 
@@ -74,6 +83,8 @@ export interface Organization {
   name: string;
   categoryId: string;
   type: OrgType;
+  /** Code ISO 3166-1 alpha-2 du pays (ex. "ML"). */
+  countryCode: string;
   region: string;
   city: string;
   address: string;

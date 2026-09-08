@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
 import { useAuthStore } from "@/store/auth";
 import { useI18n } from "@/i18n/I18nProvider";
+import { LOCALES, LOCALE_LABELS } from "@/i18n/locale";
 import { toast } from "@/store/toast";
 
 export default function LoginPage() {
@@ -29,7 +30,7 @@ export default function LoginPage() {
     const res = await login(email, password);
     setLoading(false);
     if (res.ok) {
-      toast.success(locale === "fr" ? "Connexion réussie" : "Signed in");
+      toast.success(t("login.success"));
       router.replace("/dashboard");
     } else {
       setError(res.error ?? "Erreur");
@@ -149,13 +150,17 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-6 flex justify-center gap-2 text-xs text-muted">
-            <button onClick={() => setLocale("fr")} className={locale === "fr" ? "font-semibold text-foreground" : "hover:text-foreground"}>
-              Français
-            </button>
-            <span>·</span>
-            <button onClick={() => setLocale("en")} className={locale === "en" ? "font-semibold text-foreground" : "hover:text-foreground"}>
-              English
-            </button>
+            {LOCALES.map((l, i) => (
+              <span key={l} className="flex items-center gap-2">
+                {i > 0 && <span>·</span>}
+                <button
+                  onClick={() => setLocale(l)}
+                  className={locale === l ? "font-semibold text-foreground" : "hover:text-foreground"}
+                >
+                  {LOCALE_LABELS[l]}
+                </button>
+              </span>
+            ))}
           </div>
         </div>
       </div>

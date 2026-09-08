@@ -1,8 +1,8 @@
 import { format, formatDistanceToNow, differenceInDays, parseISO } from "date-fns";
-import { fr, enUS } from "date-fns/locale";
+import { fr, enUS, arSA } from "date-fns/locale";
 import type { Locale } from "@/types";
 
-const DATE_LOCALES = { fr, en: enUS };
+const DATE_LOCALES = { fr, en: enUS, ar: arSA };
 
 // ============================================================
 // Currency — FCFA / XOF by default. Prepared for multi-currency.
