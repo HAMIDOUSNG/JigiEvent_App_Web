@@ -20,6 +20,7 @@ import { subscriptionPromotionService } from "@/services";
 import { PROMOTION_STATUS, SUBSCRIPTION_PERIOD } from "@/constants/status";
 import { formatDate, formatCurrency } from "@/utils/format";
 import { toast } from "@/store/toast";
+import { runWithToast } from "@/utils/errors";
 import type { SubscriptionPromotion } from "@/types";
 
 export default function SubscriptionPromotionsPage() {
@@ -52,13 +53,15 @@ export default function SubscriptionPromotionsPage() {
 
   async function toggleStatus(promo: SubscriptionPromotion) {
     const next = promo.status === "active" ? "draft" : "active";
-    await subscriptionPromotionService.setStatus(promo.id, next);
+    const ok = await runWithToast(() => subscriptionPromotionService.setStatus(promo.id, next), { errorTitle: "Action impossible" });
+    if (!ok) return;
     toast.success(next === "active" ? "Promotion activée" : "Promotion désactivée", promo.name);
     refresh();
   }
 
   async function remove(promo: SubscriptionPromotion) {
-    await subscriptionPromotionService.remove(promo.id);
+    const ok = await runWithToast(() => subscriptionPromotionService.remove(promo.id), { errorTitle: "Suppression impossible" });
+    if (!ok) return;
     toast.success("Promotion supprimée", promo.name);
     refresh();
   }

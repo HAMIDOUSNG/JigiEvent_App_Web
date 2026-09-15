@@ -19,7 +19,9 @@ type SubRow = {
   status: SubscriptionStatus;
   applied_promotion_id: string | null;
   created_at: string;
-  organizations?: { name: string } | null;
+  // Champs fournis par la vue subscriptions_view (source de vérité en base).
+  organization_name?: string | null;
+  effective_status?: SubscriptionStatus | null;
 };
 
 type PayRow = {
@@ -36,8 +38,12 @@ type PayRow = {
   organizations?: { name: string } | null;
 };
 
-/** Statut vivant, dérivé de la date d'expiration (cohérent avec les mocks). */
+/**
+ * Statut vivant : privilégie effective_status calculé par la vue
+ * (source de vérité en base) ; repli sur un calcul local si absent.
+ */
 function computeStatus(row: SubRow): SubscriptionStatus {
+  if (row.effective_status) return row.effective_status;
   if (row.status === "suspended") return "suspended";
   return new Date(row.end_date).getTime() < Date.now() ? "expired" : "active";
 }
@@ -46,7 +52,7 @@ function toSubscription(r: SubRow): Subscription {
   return {
     id: r.id,
     organizationId: r.organization_id,
-    organizationName: r.organizations?.name ?? "",
+    organizationName: r.organization_name ?? "",
     planId: r.plan_id ?? "",
     planName: r.plan_name,
     period: r.period,
@@ -75,7 +81,8 @@ function toPayment(r: PayRow): SubscriptionPayment {
   };
 }
 
-const SUB_SELECT = "*, organizations(name)";
+// La vue expose organization_name + effective_status (source de vérité).
+const SUB_VIEW = "subscriptions_view";
 const PAY_SELECT = "*, organizations(name)";
 
 export const subscriptionsRepo = {
@@ -84,33 +91,34 @@ export const subscriptionsRepo = {
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? 10;
     const from = (page - 1) * pageSize;
-    let q = sb.from("subscriptions").select(SUB_SELECT, { count: "exact" });
+    let q = sb.from(SUB_VIEW).select("*", { count: "exact" });
+
     for (const [key, value] of Object.entries(params.filters ?? {})) {
       if (!value || value === "all") continue;
-      // status est calculé côté client ; on ne filtre en base que sur "period".
       if (key === "period") q = q.eq("period", value);
-    }
-    const asc = params.sortDir !== "desc";
-    const sortCol = params.sortBy === "endDate" ? "end_date" : params.sortBy === "pricePaid" ? "price_paid" : "end_date";
-    const { data, count, error } = await q.order(sortCol, { ascending: asc }).range(from, from + pageSize - 1);
-    if (error) throw error;
-    let items = (data as SubRow[]).map(toSubscription);
-    // Filtre statut + recherche appliqués côté client (statut dérivé).
-    if (params.filters?.status && params.filters.status !== "all") {
-      items = items.filter((s) => s.status === params.filters!.status);
+      // Le statut est filtré en base via la colonne calculée de la vue.
+      if (key === "status") q = q.eq("effective_status", value);
     }
     if (params.search) {
-      const s = params.search.toLowerCase();
-      items = items.filter(
-        (i) => i.organizationName.toLowerCase().includes(s) || i.planName.toLowerCase().includes(s)
-      );
+      const s = `%${params.search}%`;
+      q = q.or(`organization_name.ilike.${s},plan_name.ilike.${s}`);
     }
-    return { data: items, total: count ?? items.length, page, pageSize };
+    const asc = params.sortDir !== "desc";
+    const sortCol = params.sortBy === "pricePaid" ? "price_paid" : "end_date";
+
+    const { data, count, error } = await q.order(sortCol, { ascending: asc }).range(from, from + pageSize - 1);
+    if (error) throw error;
+    return {
+      data: (data as SubRow[]).map(toSubscription),
+      total: count ?? 0,
+      page,
+      pageSize,
+    };
   },
 
   async get(id: string): Promise<Subscription | null> {
     const sb = getSupabase();
-    const { data, error } = await sb.from("subscriptions").select(SUB_SELECT).eq("id", id).maybeSingle();
+    const { data, error } = await sb.from(SUB_VIEW).select("*").eq("id", id).maybeSingle();
     if (error) throw error;
     return data ? toSubscription(data as SubRow) : null;
   },
@@ -118,8 +126,8 @@ export const subscriptionsRepo = {
   async byOrg(orgId: string): Promise<Subscription | null> {
     const sb = getSupabase();
     const { data, error } = await sb
-      .from("subscriptions")
-      .select(SUB_SELECT)
+      .from(SUB_VIEW)
+      .select("*")
       .eq("organization_id", orgId)
       .order("end_date", { ascending: false })
       .limit(1)
@@ -151,8 +159,14 @@ export const subscriptionsRepo = {
   },
 
   async canPublish(orgId: string): Promise<{ allowed: boolean; status: SubscriptionStatus }> {
+    const sb = getSupabase();
+    // Source de vérité en base : fonction can_publish(org).
+    const { data, error } = await sb.rpc("can_publish", { org: orgId });
+    if (error) throw error;
+    const allowed = Boolean(data);
+    // On récupère le statut détaillé pour l'affichage.
     const sub = await this.byOrg(orgId);
     const status: SubscriptionStatus = sub ? sub.status : "expired";
-    return { allowed: status === "active", status };
+    return { allowed, status };
   },
 };

@@ -18,6 +18,7 @@ import { planService, subscriptionPromotionService } from "@/services";
 import { PLAN_STATUS, SUBSCRIPTION_PERIOD_SUFFIX } from "@/constants/status";
 import { formatCurrency } from "@/utils/format";
 import { toast } from "@/store/toast";
+import { runWithToast } from "@/utils/errors";
 import { cn } from "@/utils/cn";
 import type { SubscriptionPlan } from "@/types";
 
@@ -51,13 +52,15 @@ export default function SubscriptionsPage() {
 
   async function toggleStatus(plan: SubscriptionPlan) {
     const next = plan.status === "active" ? "inactive" : "active";
-    await planService.setStatus(plan.id, next);
+    const ok = await runWithToast(() => planService.setStatus(plan.id, next), { errorTitle: "Action impossible" });
+    if (!ok) return;
     toast.success(next === "active" ? "Plan activé" : "Plan désactivé", plan.name);
     refresh();
   }
 
   async function remove(plan: SubscriptionPlan) {
-    await planService.remove(plan.id);
+    const ok = await runWithToast(() => planService.remove(plan.id), { errorTitle: "Suppression impossible" });
+    if (!ok) return;
     toast.success("Plan supprimé", plan.name);
     setConfirm(null);
     refresh();

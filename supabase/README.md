@@ -12,7 +12,12 @@ et à **l'application mobile**. Les deux clients pointent sur le **même projet 
 
 1. `migrations/0001_init_subscriptions.sql` — tables, types énumérés, RLS (lecture).
 2. `migrations/0002_seed_plans.sql` — plans par défaut (5 000 / 50 000 / 1 000 000).
-3. `migrations/0003_rls_policies.sql` — policies d'écriture (utilisateurs authentifiés).
+3. `migrations/0003_rls_policies.sql` — policies d'écriture (première version).
+4. `migrations/0004_profiles_auth.sql` — profils/rôles + trigger de signup.
+5. `migrations/0005_rls_hardening.sql` — **RLS durcie** (moindre privilège).
+6. `migrations/0006_views_functions.sql` — vue + fonctions (source de vérité).
+
+> ⚠️ Exécuter `0005` **après** `0004` (dépend de `profiles` et `current_role_is`).
 
 ## Tables
 
@@ -50,13 +55,27 @@ L'app mobile utilise **les mêmes** Project URL + clé anon (jamais la clé
 - **Écriture** : réservée aux utilisateurs **authentifiés** (Supabase Auth).
 - **Paiements** : lecture + écriture authentifiées uniquement.
 
-### À durcir avant production
-- Restreindre l'écriture au **Super Admin** et au **propriétaire de l'organisation**
-  (table de rôles ou claims JWT), plutôt qu'à tout utilisateur authentifié.
-- Restreindre la lecture des `organizations`/`subscriptions` selon le rôle.
-- Le fichier `0003_rls_policies.sql` contient, en commentaire, des policies
-  d'écriture via la clé `anon` **pour tester la démo web sans auth** — à ne
-  jamais activer en production.
+### Modèle durci (migration 0005)
+Appliqué par `0005_rls_hardening.sql` (moindre privilège) :
+- **Plans / promotions** : lecture publique (catalogue mobile) ; écriture **Super Admin uniquement**.
+- **Organisations** : lecture Super Admin **ou** propriétaire ; écriture Super Admin.
+- **Abonnements** : lecture Super Admin **ou** propriétaire ; écriture Super Admin.
+- **Paiements** : lecture Super Admin **ou** propriétaire ; écriture Super Admin. Aucune lecture publique.
+
+Helpers SQL : `current_role_is(role)` et `owns_org(org)`.
+
+> ⚠️ Ne jamais activer les policies « anon write » (commentées dans `0003`) en production.
+
+## Source de vérité en base (migration 0006)
+
+Pour éviter de dupliquer la logique métier entre le web et le mobile :
+- **`subscriptions_view`** : expose `effective_status` (actif/expiré/suspendu calculé
+  depuis `end_date`) et `days_remaining`. Les clients lisent le statut d'ici.
+- **`plan_effective_price(plan)`** : prix après application de la promotion active
+  de la période (fixe ou pourcentage).
+- **`can_publish(org)`** : `true` si l'organisation a un abonnement actif.
+
+Le web appelle déjà la vue (statut d'abonnement) et `can_publish` (RPC).
 
 ## Authentification (Supabase Auth)
 

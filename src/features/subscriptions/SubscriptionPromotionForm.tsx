@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { subscriptionPromotionService } from "@/services";
 import { toast } from "@/store/toast";
+import { runWithToast } from "@/utils/errors";
 import type { SubscriptionPromotion } from "@/types";
 
 const schema = z
@@ -103,14 +104,17 @@ export function SubscriptionPromotionModal({
       endDate: new Date(values.endDate).toISOString(),
       status: values.status,
     };
-    if (mode === "edit" && promotion) {
-      await subscriptionPromotionService.update(promotion.id, payload);
-      toast.success("Promotion mise à jour", values.name);
-    } else {
-      await subscriptionPromotionService.create(payload);
-      toast.success("Promotion créée", values.name);
-    }
+    const ok = await runWithToast(
+      async () => {
+        if (mode === "edit" && promotion) await subscriptionPromotionService.update(promotion.id, payload);
+        else await subscriptionPromotionService.create(payload);
+      },
+      { errorTitle: "Enregistrement impossible" }
+    );
+    if (!ok) return;
+    toast.success(mode === "edit" ? "Promotion mise à jour" : "Promotion créée", values.name);
     await qc.invalidateQueries({ queryKey: ["sub-promotions"] });
+    await qc.invalidateQueries({ queryKey: ["sub-promotions-active"] });
     await qc.invalidateQueries({ queryKey: ["plans"] });
     onClose();
   }
