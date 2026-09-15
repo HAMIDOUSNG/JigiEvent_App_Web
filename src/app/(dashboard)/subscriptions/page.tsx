@@ -14,7 +14,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SkeletonCards } from "@/components/ui/Skeleton";
 import { PlanModal } from "@/features/subscriptions/PlanForm";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { planService } from "@/services";
+import { planService, subscriptionPromotionService } from "@/services";
 import { PLAN_STATUS, SUBSCRIPTION_PERIOD_SUFFIX } from "@/constants/status";
 import { formatCurrency } from "@/utils/format";
 import { toast } from "@/store/toast";
@@ -31,10 +31,12 @@ export default function SubscriptionsPage() {
   const [confirm, setConfirm] = useState<SubscriptionPlan | null>(null);
 
   const { data: plans, isLoading } = useQuery({ queryKey: ["plans"], queryFn: () => planService.all() });
+  const { data: promotions } = useQuery({ queryKey: ["sub-promotions-active"], queryFn: () => subscriptionPromotionService.all() });
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["plans"] });
     qc.invalidateQueries({ queryKey: ["plans-active"] });
+    qc.invalidateQueries({ queryKey: ["sub-promotions-active"] });
   }
 
   function openCreate() {
@@ -84,7 +86,7 @@ export default function SubscriptionsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {plans.map((plan) => {
-            const eff = planService.effectivePrice(plan);
+            const eff = planService.effectivePrice(plan, promotions);
             const hasPromo = eff.promotion != null && eff.price !== plan.price;
             return (
               <Card key={plan.id} className={cn(plan.status === "inactive" && "opacity-60")}>

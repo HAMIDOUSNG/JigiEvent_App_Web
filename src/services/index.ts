@@ -84,10 +84,16 @@ function withComputedStatus(sub: Subscription): Subscription {
   return { ...sub, status: computeStatus(sub) };
 }
 
-/** Find the currently-active promotion for a plan's period, if any. */
-function activePromotionForPeriod(period: SubscriptionPeriod): SubscriptionPromotion | undefined {
+/**
+ * Trouve la promotion active pour une période, dans une liste donnée.
+ * En mode mock, la liste par défaut est celle en mémoire.
+ */
+function activePromotionForPeriod(
+  period: SubscriptionPeriod,
+  promotions: SubscriptionPromotion[] = db.subscriptionPromotions
+): SubscriptionPromotion | undefined {
   const now = Date.now();
-  return db.subscriptionPromotions.find(
+  return promotions.find(
     (p) =>
       p.period === period &&
       p.status === "active" &&
@@ -96,9 +102,16 @@ function activePromotionForPeriod(period: SubscriptionPeriod): SubscriptionPromo
   );
 }
 
-/** Apply an active promotion (if any) to a plan's base price. */
-function effectivePlanPrice(plan: SubscriptionPlan): { price: number; promotion?: SubscriptionPromotion } {
-  const promo = activePromotionForPeriod(plan.period);
+/**
+ * Applique une promotion active (si présente) au prix de base d'un plan.
+ * Passez `promotions` (récupérées de Supabase) pour un calcul correct en
+ * mode réel ; sinon la liste mock en mémoire est utilisée.
+ */
+function effectivePlanPrice(
+  plan: SubscriptionPlan,
+  promotions?: SubscriptionPromotion[]
+): { price: number; promotion?: SubscriptionPromotion } {
+  const promo = activePromotionForPeriod(plan.period, promotions);
   if (!promo) return { price: plan.price };
   if (promo.discountType === "fixed" && promo.promoPrice != null) {
     return { price: promo.promoPrice, promotion: promo };
@@ -342,8 +355,8 @@ export const planService = {
     return mockResolve({ ok: true });
   },
   /** Effective price of a plan today, applying any active matching promotion. */
-  effectivePrice(plan: SubscriptionPlan) {
-    return effectivePlanPrice(plan);
+  effectivePrice(plan: SubscriptionPlan, promotions?: SubscriptionPromotion[]) {
+    return effectivePlanPrice(plan, promotions);
   },
 };
 

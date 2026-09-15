@@ -58,6 +58,29 @@ L'app mobile utilise **les mêmes** Project URL + clé anon (jamais la clé
   d'écriture via la clé `anon` **pour tester la démo web sans auth** — à ne
   jamais activer en production.
 
+## Authentification (Supabase Auth)
+
+Migration : `migrations/0004_profiles_auth.sql`.
+
+- Table `profiles` (1-1 avec `auth.users`) : `role` (`SUPER_ADMIN` / `ADMIN`) et
+  `organization_id` pour un admin.
+- Un **trigger** crée le profil automatiquement au signup. Le rôle/organisation
+  peuvent être fournis dans les métadonnées d'inscription
+  (`options.data = { name, role, organization_id }`), défaut : `ADMIN`.
+- Policies : chaque utilisateur lit/modifie **son** profil.
+
+### Créer le premier Super Admin
+1. Dashboard Supabase → **Authentication → Users → Add user** (email + mot de passe).
+2. SQL Editor : promouvoir ce compte en Super Admin
+   ```sql
+   update profiles set role = 'SUPER_ADMIN'
+   where email = 'ton-email@exemple.com';
+   ```
+   (Si le profil n'existe pas encore, insère-le avec l'`id` de l'utilisateur auth.)
+3. Connecte-toi via l'écran de login du web avec ces identifiants.
+
+L'app mobile utilise la **même** table `auth.users` / `profiles` (mêmes comptes).
+
 ## Basculer entre mock et Supabase (web)
 
 Le flag `NEXT_PUBLIC_USE_MOCKS` pilote tout :
