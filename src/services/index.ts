@@ -1,4 +1,8 @@
-import { mockResolve } from "@/api/client";
+import { mockResolve, apiConfig } from "@/api/client";
+import { organizationsRepo } from "@/api/repositories/organizations";
+import { plansRepo } from "@/api/repositories/plans";
+import { subscriptionPromotionsRepo } from "@/api/repositories/subscriptionPromotions";
+import { subscriptionsRepo } from "@/api/repositories/subscriptions";
 import * as db from "@/mocks/data";
 import * as analytics from "@/mocks/analytics";
 import { countryAmountToReference } from "@/constants/exchange";
@@ -191,6 +195,7 @@ export const adminService = {
 
 export const organizationService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return organizationsRepo.list(params);
     let items = db.organizations;
     items = applySearch(items, params.search, ["name", "email", "city"]);
     items = applyFilters(items, params.filters);
@@ -198,9 +203,11 @@ export const organizationService = {
     return mockResolve(paginate(items, params.page, params.pageSize ?? 10));
   },
   get(id: string) {
+    if (!apiConfig.useMocks) return organizationsRepo.get(id);
     return mockResolve(db.organizations.find((o) => o.id === id) ?? null);
   },
   create(input: OrganizationInput) {
+    if (!apiConfig.useMocks) return organizationsRepo.create(input);
     const id = `org-${db.organizations.length + 1}-${Date.now().toString(36)}`;
     const org: Organization = {
       id,
@@ -228,6 +235,7 @@ export const organizationService = {
     return mockResolve(org);
   },
   update(id: string, patch: Partial<OrganizationInput>) {
+    if (!apiConfig.useMocks) return organizationsRepo.update(id, patch);
     const org = db.organizations.find((o) => o.id === id);
     if (!org) return mockResolve(null);
     Object.assign(org, patch);
@@ -284,18 +292,22 @@ export const promotionService = {
 
 export const planService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return plansRepo.list(params);
     let items = db.subscriptionPlans;
     items = applySearch(items, params.search, ["name", "description"]);
     items = applyFilters(items, params.filters);
     return mockResolve(paginate(items, params.page, params.pageSize ?? 20));
   },
   all() {
+    if (!apiConfig.useMocks) return plansRepo.all();
     return mockResolve(db.subscriptionPlans);
   },
   get(id: string) {
+    if (!apiConfig.useMocks) return plansRepo.get(id);
     return mockResolve(db.subscriptionPlans.find((p) => p.id === id) ?? null);
   },
   create(input: PlanInput) {
+    if (!apiConfig.useMocks) return plansRepo.create(input);
     const plan: SubscriptionPlan = {
       id: `plan-${Date.now().toString(36)}`,
       name: input.name,
@@ -310,18 +322,21 @@ export const planService = {
     return mockResolve(plan);
   },
   update(id: string, patch: Partial<PlanInput>) {
+    if (!apiConfig.useMocks) return plansRepo.update(id, patch);
     const plan = db.subscriptionPlans.find((p) => p.id === id);
     if (!plan) return mockResolve(null);
     Object.assign(plan, patch);
     return mockResolve(plan);
   },
   setStatus(id: string, status: SubscriptionPlan["status"]) {
+    if (!apiConfig.useMocks) return plansRepo.setStatus(id, status);
     const plan = db.subscriptionPlans.find((p) => p.id === id);
     if (!plan) return mockResolve(null);
     plan.status = status;
     return mockResolve(plan);
   },
   remove(id: string) {
+    if (!apiConfig.useMocks) return plansRepo.remove(id);
     const idx = db.subscriptionPlans.findIndex((p) => p.id === id);
     if (idx >= 0) db.subscriptionPlans.splice(idx, 1);
     return mockResolve({ ok: true });
@@ -334,6 +349,7 @@ export const planService = {
 
 export const subscriptionService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return subscriptionsRepo.list(params);
     let items = db.subscriptions.map(withComputedStatus);
     items = applySearch(items, params.search, ["organizationName", "planName"]);
     items = applyFilters(items, params.filters);
@@ -341,14 +357,17 @@ export const subscriptionService = {
     return mockResolve(paginate(items, params.page, params.pageSize ?? 10));
   },
   get(id: string) {
+    if (!apiConfig.useMocks) return subscriptionsRepo.get(id);
     const sub = db.subscriptions.find((s) => s.id === id);
     return mockResolve(sub ? withComputedStatus(sub) : null);
   },
   byOrg(orgId: string) {
+    if (!apiConfig.useMocks) return subscriptionsRepo.byOrg(orgId);
     const sub = db.subscriptions.find((s) => s.organizationId === orgId);
     return mockResolve(sub ? withComputedStatus(sub) : null);
   },
   paymentsFor(subscriptionId: string) {
+    if (!apiConfig.useMocks) return subscriptionsRepo.paymentsFor(subscriptionId);
     return mockResolve(
       db.subscriptionPayments
         .filter((p) => p.subscriptionId === subscriptionId)
@@ -356,6 +375,7 @@ export const subscriptionService = {
     );
   },
   paymentsForOrg(orgId: string) {
+    if (!apiConfig.useMocks) return subscriptionsRepo.paymentsForOrg(orgId);
     return mockResolve(
       db.subscriptionPayments
         .filter((p) => p.organizationId === orgId)
@@ -367,6 +387,7 @@ export const subscriptionService = {
    * Blocked when its subscription is expired or suspended.
    */
   canPublish(orgId: string) {
+    if (!apiConfig.useMocks) return subscriptionsRepo.canPublish(orgId);
     const sub = db.subscriptions.find((s) => s.organizationId === orgId);
     const status = sub ? computeStatus(sub) : "expired";
     return mockResolve({ allowed: status === "active", status });
@@ -375,15 +396,18 @@ export const subscriptionService = {
 
 export const subscriptionPromotionService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return subscriptionPromotionsRepo.list(params);
     let items = db.subscriptionPromotions;
     items = applySearch(items, params.search, ["name"]);
     items = applyFilters(items, params.filters);
     return mockResolve(paginate(items, params.page, params.pageSize ?? 20));
   },
   all() {
+    if (!apiConfig.useMocks) return subscriptionPromotionsRepo.all();
     return mockResolve(db.subscriptionPromotions);
   },
   create(input: SubscriptionPromotionInput) {
+    if (!apiConfig.useMocks) return subscriptionPromotionsRepo.create(input);
     const promo: SubscriptionPromotion = {
       id: `spromo-${Date.now().toString(36)}`,
       name: input.name,
@@ -400,18 +424,21 @@ export const subscriptionPromotionService = {
     return mockResolve(promo);
   },
   update(id: string, patch: Partial<SubscriptionPromotion>) {
+    if (!apiConfig.useMocks) return subscriptionPromotionsRepo.update(id, patch);
     const promo = db.subscriptionPromotions.find((p) => p.id === id);
     if (!promo) return mockResolve(null);
     Object.assign(promo, patch);
     return mockResolve(promo);
   },
   setStatus(id: string, status: SubscriptionPromotion["status"]) {
+    if (!apiConfig.useMocks) return subscriptionPromotionsRepo.setStatus(id, status);
     const promo = db.subscriptionPromotions.find((p) => p.id === id);
     if (!promo) return mockResolve(null);
     promo.status = status;
     return mockResolve(promo);
   },
   remove(id: string) {
+    if (!apiConfig.useMocks) return subscriptionPromotionsRepo.remove(id);
     const idx = db.subscriptionPromotions.findIndex((p) => p.id === id);
     if (idx >= 0) db.subscriptionPromotions.splice(idx, 1);
     return mockResolve({ ok: true });
