@@ -16,7 +16,7 @@ export default function EditEventPage({ params }: PageProps<"/events/[id]/edit">
         <ArrowLeft className="h-4 w-4" /> Détails de l&apos;événement
       </Link>
       <PageHeader title="Modifier l'événement" description="Mettez à jour les informations." />
-      <EventForm mode="edit" />
+      <EventForm mode="edit" eventId={id} />
     </div>
   );
 }

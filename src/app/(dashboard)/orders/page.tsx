@@ -43,8 +43,8 @@ export default function OrdersPage() {
     { key: "ticketsCount", header: "Billets", align: "right", render: (o) => o.ticketsCount },
     { key: "amount", header: "Montant", sortable: true, align: "right", render: (o) => <span className="font-semibold">{formatCurrency(o.amount)}</span> },
     { key: "paymentMethod", header: "Paiement", render: (o) => PAYMENT_METHOD_LABEL[o.paymentMethod] },
-    { key: "paymentStatus", header: "État paiement", render: (o) => <StatusBadge meta={PAYMENT_STATUS[o.paymentStatus]} /> },
-    { key: "status", header: "Statut", render: (o) => <StatusBadge meta={ORDER_STATUS[o.status]} /> },
+    { key: "paymentStatus", header: "État paiement", render: (o) => <StatusBadge meta={PAYMENT_STATUS[o.paymentStatus]} fallback={o.paymentStatus} /> },
+    { key: "status", header: "Statut", render: (o) => <StatusBadge meta={ORDER_STATUS[o.status]} fallback={o.status} /> },
     { key: "createdAt", header: "Date", sortable: true, render: (o) => <span className="text-muted">{formatDateTime(o.createdAt)}</span> },
   ];
 

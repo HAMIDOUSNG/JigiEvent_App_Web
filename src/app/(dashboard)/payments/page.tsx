@@ -7,9 +7,9 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ErrorState } from "@/components/ui/States";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useListQuery } from "@/hooks/useListQuery";
-import { paymentService } from "@/services";
+import { useQuery } from "@tanstack/react-query";
+import { paymentService, organizationService } from "@/services";
 import { PAYMENT_STATUS, PAYMENT_METHOD_LABEL } from "@/constants/status";
-import { organizations } from "@/mocks/data";
 import { formatCurrency, formatDateTime } from "@/utils/format";
 import { exportToCsv } from "@/utils/export";
 import { toast } from "@/store/toast";
@@ -23,6 +23,13 @@ export default function PaymentsPage() {
     fetcher: paymentService.list,
     defaultSort: { by: "createdAt", dir: "desc" },
   });
+
+  // Organisations réelles (Supabase) pour le filtre "Organisation".
+  const { data: orgList } = useQuery({
+    queryKey: ["organizations-filter"],
+    queryFn: () => organizationService.list({ pageSize: 100 }),
+  });
+  const organizationOptions = orgList?.data ?? [];
 
   const columns: Column<Payment>[] = [
     { key: "transactionId", header: "Transaction", render: (p) => <span className="font-medium text-foreground">{p.transactionId}</span> },
@@ -63,7 +70,7 @@ export default function PaymentsPage() {
             key: "organizationId",
             placeholder: "Organisation",
             value: list.filters.organizationId ?? "all",
-            options: organizations.map((o) => ({ value: o.id, label: o.name })),
+            options: organizationOptions.map((o) => ({ value: o.id, label: o.name })),
             onChange: (v) => list.setFilter("organizationId", v),
           },
         ]}

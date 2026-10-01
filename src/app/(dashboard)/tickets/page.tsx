@@ -11,21 +11,22 @@ import { EmptyState } from "@/components/ui/States";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { ticketService } from "@/services";
 import { TICKET_STATUS } from "@/constants/status";
-import { events } from "@/mocks/data";
 import { formatCurrency, formatNumber } from "@/utils/format";
 import { useAuthStore } from "@/store/auth";
-
-const eventName = (id: string) => events.find((e) => e.id === id)?.name ?? id;
-const eventOrg = (id: string) => events.find((e) => e.id === id)?.organizationId;
 
 export default function TicketsPage() {
   useRequireAuth();
   const user = useAuthStore((s) => s.user);
   const isSA = user?.role === "SUPER_ADMIN";
-  const { data: allTickets, isLoading } = useQuery({ queryKey: ["tickets-all"], queryFn: ticketService.all });
+  const { data: allTickets, isLoading } = useQuery({
+    queryKey: ["tickets-all"],
+    queryFn: ticketService.allWithEvents,
+  });
 
+  // En mode réel, la RLS restreint déjà au périmètre de l'utilisateur.
+  // Ce filtre reste une sécurité côté client (utile aussi en mode mock).
   const tickets = (allTickets ?? []).filter(
-    (t) => isSA || !user?.organizationId || eventOrg(t.eventId) === user.organizationId
+    (t) => isSA || !user?.organizationId || t.organizationId === user.organizationId
   );
 
   const totalSold = tickets.reduce((s, t) => s + t.sold, 0);
@@ -60,7 +61,7 @@ export default function TicketsPage() {
                 <CardBody>
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-caption">{eventName(t.eventId)}</p>
+                      <p className="text-caption">{t.eventName || "—"}</p>
                       <h3 className="text-h4 text-foreground mt-0.5">{t.name}</h3>
                     </div>
                     <StatusBadge meta={TICKET_STATUS[t.status]} />

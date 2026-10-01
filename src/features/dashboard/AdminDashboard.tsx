@@ -16,9 +16,9 @@ export function AdminDashboard({ orgId }: { orgId: string }) {
     queryKey: ["dashboard", "admin", orgId],
     queryFn: () => dashboardService.adminKpis(orgId),
   });
-  const { data: revenue } = useQuery({ queryKey: ["an", "revenue"], queryFn: analyticsService.revenueOverTime });
-  const { data: tickets } = useQuery({ queryKey: ["an", "tickets"], queryFn: analyticsService.ticketsOverTime });
-  const { data: ticketDist } = useQuery({ queryKey: ["an", "ticketDist"], queryFn: analyticsService.ticketDistribution });
+  const { data: revenue } = useQuery({ queryKey: ["an", "revenue", orgId], queryFn: () => analyticsService.revenueOverTime(orgId) });
+  const { data: tickets } = useQuery({ queryKey: ["an", "tickets", orgId], queryFn: () => analyticsService.ticketsOverTime(orgId) });
+  const { data: ticketDist } = useQuery({ queryKey: ["an", "ticketDist", orgId], queryFn: () => analyticsService.ticketDistribution(orgId) });
 
   return (
     <div className="space-y-6">

@@ -30,10 +30,10 @@ export default function RevenuePage() {
   const isSA = user?.role === "SUPER_ADMIN";
   const [period, setPeriod] = useState("12m");
 
-  const { data: revenue } = useQuery({ queryKey: ["an", "revenue"], queryFn: analyticsService.revenueOverTime });
-  const { data: byCategory } = useQuery({ queryKey: ["an", "byCategory"], queryFn: analyticsService.revenueByCategory });
-  const { data: topOrgs } = useQuery({ queryKey: ["an", "topOrgs"], queryFn: analyticsService.topOrganizations });
-  const { data: saKpis } = useQuery({ queryKey: ["dash", "sa"], queryFn: dashboardService.superAdminKpis, enabled: isSA });
+  const { data: revenue } = useQuery({ queryKey: ["an", "revenue"], queryFn: () => analyticsService.revenueOverTime() });
+  const { data: byCategory } = useQuery({ queryKey: ["an", "byCategory"], queryFn: () => analyticsService.revenueByCategory() });
+  const { data: topOrgs } = useQuery({ queryKey: ["an", "topOrgs"], queryFn: () => analyticsService.topOrganizations() });
+  const { data: saKpis } = useQuery({ queryKey: ["dash", "sa"], queryFn: () => dashboardService.superAdminKpis(), enabled: isSA });
   const { data: admKpis } = useQuery({
     queryKey: ["dash", "adm", user?.organizationId],
     queryFn: () => dashboardService.adminKpis(user!.organizationId!),

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   MoreHorizontal,
   Eye,
@@ -23,15 +24,13 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState } from "@/components/ui/States";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useListQuery } from "@/hooks/useListQuery";
-import { eventService } from "@/services";
+import { eventService, organizationService } from "@/services";
 import { EVENT_STATUS } from "@/constants/status";
-import { categories, eventTypes, organizations, REGIONS } from "@/mocks/data";
+import { REGIONS } from "@/mocks/data";
 import { formatCurrency, formatDate, formatNumber } from "@/utils/format";
 import { toast } from "@/store/toast";
 import { useAuthStore } from "@/store/auth";
 import type { EventItem } from "@/types";
-
-const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? id;
 
 export default function EventsPage() {
   useRequireAuth();
@@ -46,6 +45,21 @@ export default function EventsPage() {
     defaultSort: { by: "startDate", dir: "desc" },
     initialFilters: !isSA && user?.organizationId ? { organizationId: user.organizationId } : {},
   });
+
+  // Catégories réelles (Supabase) pour les filtres et la résolution des noms.
+  const { data: categoryOptions = [] } = useQuery({
+    queryKey: ["event-categories"],
+    queryFn: eventService.categories,
+  });
+  const catName = (id: string) => categoryOptions.find((c) => c.id === id)?.name ?? id;
+
+  // Organisations réelles (Super Admin uniquement) pour le filtre "Organisation".
+  const { data: orgList } = useQuery({
+    queryKey: ["organizations-filter"],
+    queryFn: () => organizationService.list({ pageSize: 100 }),
+    enabled: isSA,
+  });
+  const organizationOptions = orgList?.data ?? [];
 
   const columns: Column<EventItem>[] = [
     {
@@ -92,9 +106,25 @@ export default function EventsPage() {
             { label: "Voir", icon: Eye, onClick: () => router.push(`/events/${e.id}`) },
             { label: "Modifier", icon: Pencil, onClick: () => router.push(`/events/${e.id}/edit`) },
             { label: "Dupliquer", icon: Copy, onClick: () => toast.success("Événement dupliqué", e.name) },
-            e.status === "published"
-              ? { label: "Dépublier", icon: EyeOff, onClick: () => toast.info("Événement dépublié", e.name) }
-              : { label: "Publier", icon: Send, onClick: () => toast.success("Événement publié", e.name) },
+            e.status !== "draft" && e.status !== "cancelled"
+              ? {
+                  label: "Dépublier",
+                  icon: EyeOff,
+                  onClick: async () => {
+                    await eventService.setStatus(e.id, "draft");
+                    toast.info("Événement dépublié", e.name);
+                    list.refetch();
+                  },
+                }
+              : {
+                  label: "Publier",
+                  icon: Send,
+                  onClick: async () => {
+                    await eventService.setStatus(e.id, "upcoming");
+                    toast.success("Événement publié", e.name);
+                    list.refetch();
+                  },
+                },
             { label: "Annuler", icon: XCircle, onClick: () => setConfirm({ evt: e, action: "cancel" }) },
             { divider: true, label: "" },
             { label: "Supprimer", icon: Trash2, tone: "danger", onClick: () => setConfirm({ evt: e, action: "delete" }) },
@@ -125,15 +155,8 @@ export default function EventsPage() {
             key: "categoryId",
             placeholder: "Catégorie",
             value: list.filters.categoryId ?? "all",
-            options: categories.map((c) => ({ value: c.id, label: c.name })),
+            options: categoryOptions.map((c) => ({ value: c.id, label: c.name })),
             onChange: (v) => list.setFilter("categoryId", v),
-          },
-          {
-            key: "eventTypeId",
-            placeholder: "Type",
-            value: list.filters.eventTypeId ?? "all",
-            options: eventTypes.map((t) => ({ value: t.id, label: t.name })),
-            onChange: (v) => list.setFilter("eventTypeId", v),
           },
           {
             key: "region",
@@ -155,7 +178,7 @@ export default function EventsPage() {
                   key: "organizationId",
                   placeholder: "Organisation",
                   value: list.filters.organizationId ?? "all",
-                  options: organizations.map((o) => ({ value: o.id, label: o.name })),
+                  options: organizationOptions.map((o) => ({ value: o.id, label: o.name })),
                   onChange: (v: string) => list.setFilter("organizationId", v),
                 },
               ]
@@ -199,12 +222,17 @@ export default function EventsPage() {
             : "Les acheteurs seront notifiés et remboursés selon la politique en vigueur."
         }
         confirmLabel={confirm?.action === "delete" ? "Supprimer" : "Annuler l'événement"}
-        onConfirm={() =>
-          toast.success(
-            confirm?.action === "delete" ? "Événement supprimé" : "Événement annulé",
-            confirm?.evt.name
-          )
-        }
+        onConfirm={async () => {
+          if (!confirm) return;
+          if (confirm.action === "delete") {
+            await eventService.remove(confirm.evt.id);
+            toast.success("Événement supprimé", confirm.evt.name);
+          } else {
+            await eventService.setStatus(confirm.evt.id, "cancelled");
+            toast.success("Événement annulé", confirm.evt.name);
+          }
+          list.refetch();
+        }}
       />
     </div>
   );

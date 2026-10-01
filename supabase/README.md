@@ -16,18 +16,39 @@ et à **l'application mobile**. Les deux clients pointent sur le **même projet 
 4. `migrations/0004_profiles_auth.sql` — profils/rôles + trigger de signup.
 5. `migrations/0005_rls_hardening.sql` — **RLS durcie** (moindre privilège).
 6. `migrations/0006_views_functions.sql` — vue + fonctions (source de vérité).
+7. `migrations/0007_events_ticketing.sql` — **domaine événements & billetterie** (grand public mobile).
+8. `migrations/0008_seed_events_demo.sql` — seed de démo (catégories, artistes, un événement publié).
+9. `migrations/0009_ticket_types_active.sql` — colonne `is_active` sur `ticket_types` (désactivation au lieu de suppression pour les billets vendus).
 
 > ⚠️ Exécuter `0005` **après** `0004` (dépend de `profiles` et `current_role_is`).
+> ⚠️ Exécuter `0007` **après** `0001` (dépend de `organizations`) et `0008` **après** `0007`.
 
 ## Tables
 
+### Domaine abonnements (back-office web)
 | Table | Rôle |
 | --- | --- |
-| `organizations` | Comptes entreprise (nom, pays, contact, statut, logo…) |
+| `organizations` | Comptes entreprise / organisateurs (nom, pays, contact, statut, logo…) |
 | `subscription_plans` | Plans configurables (journalier / mensuel / annuel) |
 | `subscription_promotions` | Promotions (% ou prix fixe) par période |
 | `subscriptions` | Abonnement courant d'une entreprise |
 | `subscription_payments` | Historique des paiements d'abonnement |
+
+### Domaine événements & billetterie (app mobile grand public)
+| Table | Rôle | Lecture anon |
+| --- | --- | --- |
+| `categories` | Catégories d'événements | publique |
+| `artists` | Artistes / intervenants | publique |
+| `events` | Événements (organisateur = `organizations`) | publique si `status <> 'draft'` |
+| `event_artists` | Association événement ⇄ artistes | publique (si événement public) |
+| `ticket_types` | Types de billets par événement | publique (si événement public) |
+| `orders` | Commandes d'un acheteur | privé au propriétaire (`auth.uid()`) |
+| `order_items` | Lignes de commande | privé au propriétaire |
+| `tickets` | Billets émis (QR) | privé au propriétaire |
+
+Vue `events_public_view` : événements publiés enrichis (catégorie, organisateur,
+prix le plus bas) pour alimenter les listes mobiles sans jointure côté client.
+Fonction `ticket_type_availability(tt)` : statut disponible/limité/épuisé.
 
 Convention : colonnes en **snake_case** en base ; le front mappe vers camelCase
 dans `src/api/repositories/*`.

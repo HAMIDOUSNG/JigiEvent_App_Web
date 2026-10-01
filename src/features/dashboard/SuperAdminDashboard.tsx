@@ -42,10 +42,10 @@ export function SuperAdminDashboard() {
     queryKey: ["dashboard", "sa", "subscription-kpis"],
     queryFn: () => dashboardService.subscriptionKpis(),
   });
-  const { data: revenue } = useQuery({ queryKey: ["an", "revenue"], queryFn: analyticsService.revenueOverTime });
-  const { data: tickets } = useQuery({ queryKey: ["an", "tickets"], queryFn: analyticsService.ticketsOverTime });
-  const { data: eventsBreak } = useQuery({ queryKey: ["an", "events"], queryFn: analyticsService.eventsBreakdown });
-  const { data: usersRegion } = useQuery({ queryKey: ["an", "usersRegion"], queryFn: analyticsService.usersByRegion });
+  const { data: revenue } = useQuery({ queryKey: ["an", "revenue"], queryFn: () => analyticsService.revenueOverTime() });
+  const { data: tickets } = useQuery({ queryKey: ["an", "tickets"], queryFn: () => analyticsService.ticketsOverTime() });
+  const { data: eventsBreak } = useQuery({ queryKey: ["an", "events"], queryFn: () => analyticsService.eventsBreakdown() });
+  const { data: usersRegion } = useQuery({ queryKey: ["an", "usersRegion"], queryFn: () => analyticsService.usersByRegion() });
 
   return (
     <div className="space-y-6">

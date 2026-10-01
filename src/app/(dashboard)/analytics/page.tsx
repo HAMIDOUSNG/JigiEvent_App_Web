@@ -29,15 +29,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function AnalyticsPage() {
   useRequireAuth(["SUPER_ADMIN"]);
 
-  const { data: kpis } = useQuery({ queryKey: ["dash", "sa"], queryFn: dashboardService.superAdminKpis });
-  const { data: revenue } = useQuery({ queryKey: ["an", "revenue"], queryFn: analyticsService.revenueOverTime });
-  const { data: tickets } = useQuery({ queryKey: ["an", "tickets"], queryFn: analyticsService.ticketsOverTime });
-  const { data: eventsBreak } = useQuery({ queryKey: ["an", "events"], queryFn: analyticsService.eventsBreakdown });
-  const { data: usersRegion } = useQuery({ queryKey: ["an", "usersRegion"], queryFn: analyticsService.usersByRegion });
-  const { data: byCategory } = useQuery({ queryKey: ["an", "byCategory"], queryFn: analyticsService.revenueByCategory });
-  const { data: topOrgs } = useQuery({ queryKey: ["an", "topOrgs"], queryFn: analyticsService.topOrganizations });
-  const { data: topEvents } = useQuery({ queryKey: ["an", "topEvents"], queryFn: analyticsService.topEvents });
-  const { data: ticketDist } = useQuery({ queryKey: ["an", "ticketDist"], queryFn: analyticsService.ticketDistribution });
+  const { data: kpis } = useQuery({ queryKey: ["dash", "sa"], queryFn: () => dashboardService.superAdminKpis() });
+  const { data: revenue } = useQuery({ queryKey: ["an", "revenue"], queryFn: () => analyticsService.revenueOverTime() });
+  const { data: tickets } = useQuery({ queryKey: ["an", "tickets"], queryFn: () => analyticsService.ticketsOverTime() });
+  const { data: eventsBreak } = useQuery({ queryKey: ["an", "events"], queryFn: () => analyticsService.eventsBreakdown() });
+  const { data: usersRegion } = useQuery({ queryKey: ["an", "usersRegion"], queryFn: () => analyticsService.usersByRegion() });
+  const { data: byCategory } = useQuery({ queryKey: ["an", "byCategory"], queryFn: () => analyticsService.revenueByCategory() });
+  const { data: topOrgs } = useQuery({ queryKey: ["an", "topOrgs"], queryFn: () => analyticsService.topOrganizations() });
+  const { data: topEvents } = useQuery({ queryKey: ["an", "topEvents"], queryFn: () => analyticsService.topEvents() });
+  const { data: ticketDist } = useQuery({ queryKey: ["an", "ticketDist"], queryFn: () => analyticsService.ticketDistribution() });
 
   return (
     <div className="space-y-8">

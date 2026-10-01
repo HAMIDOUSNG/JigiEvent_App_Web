@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Bell, Mail, MessageSquare, Smartphone, Send } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardHeader, CardTitle, CardBody } from "@/components/ui/Card";
@@ -29,16 +29,45 @@ const STATUS_LABEL = { sent: "Envoyée", scheduled: "Programmée", draft: "Broui
 
 export default function NotificationsPage() {
   useRequireAuth();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [sending, setSending] = useState(false);
+  const queryClient = useQueryClient();
   const { data: campaigns, isLoading } = useQuery({ queryKey: ["notifications"], queryFn: notificationService.all });
 
+  const [modalOpen, setModalOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [channel, setChannel] = useState<NotificationChannel>("push");
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [audience, setAudience] = useState("all");
+  const [scheduledAt, setScheduledAt] = useState("");
+
+  function openCreate() {
+    setChannel("push"); setTitle(""); setMessage(""); setAudience("all"); setScheduledAt("");
+    setModalOpen(true);
+  }
+
   async function send() {
+    if (!title.trim() || !message.trim()) {
+      toast.error("Champs requis", "Le titre et le message sont obligatoires.");
+      return;
+    }
     setSending(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSending(false);
-    toast.success("Notification programmée");
-    setModalOpen(false);
+    try {
+      await notificationService.create({
+        title,
+        message,
+        channel,
+        audience,
+        scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+        status: scheduledAt ? "scheduled" : "draft",
+      });
+      toast.success(scheduledAt ? "Notification programmée" : "Brouillon enregistré", title);
+      setModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    } catch (err) {
+      toast.error("Échec", err instanceof Error ? err.message : "Opération impossible.");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -46,7 +75,7 @@ export default function NotificationsPage() {
       <PageHeader
         title="Notifications"
         description="Push, SMS, e-mail et notifications in-app."
-        action={<Button onClick={() => setModalOpen(true)}><Plus className="h-4 w-4" /> Nouvelle notification</Button>}
+        action={<Button onClick={openCreate}><Plus className="h-4 w-4" /> Nouvelle notification</Button>}
       />
 
       {/* Channel summary */}
@@ -130,13 +159,23 @@ export default function NotificationsPage() {
       >
         <div className="space-y-4">
           <Field label="Canal" required>
-            <Select options={Object.entries(CHANNEL_META).map(([value, m]) => ({ value, label: m.label }))} />
+            <Select
+              value={channel}
+              onChange={(e) => setChannel(e.target.value as NotificationChannel)}
+              options={Object.entries(CHANNEL_META).map(([value, m]) => ({ value, label: m.label }))}
+            />
           </Field>
-          <Field label="Titre" required><Input placeholder="Titre de la notification" /></Field>
-          <Field label="Message" required><Textarea placeholder="Contenu du message…" /></Field>
+          <Field label="Titre" required>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre de la notification" />
+          </Field>
+          <Field label="Message" required>
+            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Contenu du message…" />
+          </Field>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Audience" required>
               <Select
+                value={audience}
+                onChange={(e) => setAudience(e.target.value)}
                 options={[
                   { value: "all", label: "Tous les utilisateurs" },
                   { value: "admins", label: "Admins" },
@@ -146,7 +185,9 @@ export default function NotificationsPage() {
                 ]}
               />
             </Field>
-            <Field label="Programmation"><Input type="datetime-local" /></Field>
+            <Field label="Programmation">
+              <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+            </Field>
           </div>
         </div>
       </Modal>

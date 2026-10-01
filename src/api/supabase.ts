@@ -33,3 +33,20 @@ export function getSupabase(): SupabaseClient {
   }
   return client;
 }
+
+/**
+ * Crée un client Supabase ISOLÉ, sans persistance de session.
+ * Utile pour des opérations d'authentification (ex. créer un compte
+ * organisateur via signUp) qui ne doivent PAS remplacer la session de
+ * l'utilisateur courant (le Super Admin reste connecté).
+ */
+export function createIsolatedClient(): SupabaseClient {
+  if (!isSupabaseConfigured) {
+    throw new Error(
+      "Supabase n'est pas configuré. Renseignez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY dans .env."
+    );
+  }
+  return createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}

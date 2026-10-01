@@ -1,4 +1,4 @@
-import { getSupabase } from "@/api/supabase";
+import { getSupabase, createIsolatedClient } from "@/api/supabase";
 import type { QueryParams } from "@/services/helpers";
 import type { Organization, Paginated } from "@/types";
 import type { OrganizationInput } from "@/services";
@@ -116,13 +116,43 @@ export const organizationsRepo = {
 
   async create(input: OrganizationInput): Promise<Organization> {
     const sb = getSupabase();
+    // 1. Créer l'organisation (réservé au Super Admin par la RLS).
     const { data, error } = await sb
       .from("organizations")
       .insert(toRow(input))
       .select("*")
       .single();
     if (error) throw error;
-    return toOrganization(data as Row);
+    const organization = toOrganization(data as Row);
+
+    // 2. Créer le compte de connexion de l'organisateur (rôle ADMIN,
+    //    rattaché à cette organisation). Le trigger `handle_new_user`
+    //    crée automatiquement le profil à partir des métadonnées.
+    //    On utilise un client ISOLÉ pour NE PAS remplacer la session
+    //    du Super Admin courant.
+    if (input.loginEmail && input.password) {
+      const authClient = createIsolatedClient();
+      const { error: signUpError } = await authClient.auth.signUp({
+        email: input.loginEmail,
+        password: input.password,
+        options: {
+          data: {
+            name: input.adminName || input.name,
+            role: "ADMIN",
+            organization_id: organization.id,
+          },
+        },
+      });
+      if (signUpError) {
+        // L'organisation est créée mais le compte de connexion a échoué :
+        // on remonte une erreur explicite (l'admin pourra recréer le compte).
+        throw new Error(
+          `Organisation créée, mais le compte de connexion n'a pas pu être créé : ${signUpError.message}`,
+        );
+      }
+    }
+
+    return organization;
   },
 
   async update(id: string, patch: Partial<OrganizationInput>): Promise<Organization | null> {

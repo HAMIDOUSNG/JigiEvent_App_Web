@@ -3,6 +3,26 @@ import { organizationsRepo } from "@/api/repositories/organizations";
 import { plansRepo } from "@/api/repositories/plans";
 import { subscriptionPromotionsRepo } from "@/api/repositories/subscriptionPromotions";
 import { subscriptionsRepo } from "@/api/repositories/subscriptions";
+import { eventsRepo, type TicketTypeWithEvent } from "@/api/repositories/events";
+import { ordersRepo } from "@/api/repositories/orders";
+import { analyticsRepo } from "@/api/repositories/analytics";
+import {
+  adminsRepo,
+  endUsersRepo,
+  paymentsRepo,
+  categoriesRepo,
+  eventTypesRepo,
+  licensesRepo,
+  notificationsRepo,
+  articlesRepo,
+  promotionsRepo,
+  type CategoryInput,
+  type EventTypeInput,
+  type NotificationInput,
+  type ArticleInput,
+  type PromotionInput,
+} from "@/api/repositories/content";
+import { storageRepo } from "@/api/repositories/storage";
 import * as db from "@/mocks/data";
 import * as analytics from "@/mocks/analytics";
 import { countryAmountToReference } from "@/constants/exchange";
@@ -71,6 +91,38 @@ export interface SubscriptionPromotionInput {
   status?: SubscriptionPromotion["status"];
 }
 
+/**
+ * Statuts d'événement acceptés par la base (enum `event_status`, migration
+ * 0007). Un événement est PUBLIÉ (visible côté mobile) dès que son statut
+ * n'est pas `draft`.
+ */
+export type EventDbStatus = "draft" | "upcoming" | "ongoing" | "past" | "cancelled";
+
+export interface EventInput {
+  name: string;
+  description?: string;
+  organizationId: string;
+  categoryId?: string;
+  region?: string;
+  city?: string;
+  address?: string;
+  venueName?: string;
+  startDate: string;
+  endDate: string;
+  coverImage?: string;
+  status?: EventDbStatus;
+  isFeatured?: boolean;
+  isPromoted?: boolean;
+}
+
+export interface TicketTypeInput {
+  name: string;
+  price: number;
+  quantity: number;
+  maxPerOrder?: number;
+  description?: string;
+}
+
 // ============================================================
 // Subscription helpers
 // ============================================================
@@ -129,6 +181,7 @@ function effectivePlanPrice(
 
 export const eventService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return eventsRepo.list(params);
     let items = db.events;
     items = applySearch(items, params.search, ["name", "organizationName", "city"]);
     items = applyFilters(items, params.filters);
@@ -136,16 +189,125 @@ export const eventService = {
     return mockResolve(paginate(items, params.page, params.pageSize ?? 10));
   },
   get(id: string) {
+    if (!apiConfig.useMocks) return eventsRepo.get(id);
     return mockResolve(db.events.find((e) => e.id === id) ?? null);
   },
   ticketsFor(eventId: string) {
+    if (!apiConfig.useMocks) return eventsRepo.ticketsFor(eventId);
     return mockResolve(db.ticketTypes.filter((t) => t.eventId === eventId));
   },
   ordersFor(eventId: string) {
+    // Pas encore branché sur Supabase (les commandes mobiles sont privées) :
+    // renvoie les commandes mock côté back-office.
     return mockResolve(db.orders.filter((o) => o.eventId === eventId).slice(0, 8));
   },
   byOrg(orgId: string) {
+    if (!apiConfig.useMocks) return eventsRepo.byOrg(orgId);
     return mockResolve(db.events.filter((e) => e.organizationId === orgId));
+  },
+  create(input: EventInput) {
+    if (!apiConfig.useMocks) return eventsRepo.create(input);
+    const id = `evt-${db.events.length + 1}-${Date.now().toString(36)}`;
+    const event: EventItem = {
+      id,
+      name: input.name,
+      description: input.description ?? "",
+      organizationId: input.organizationId,
+      organizationName:
+        db.organizations.find((o) => o.id === input.organizationId)?.name ?? "",
+      categoryId: input.categoryId ?? "",
+      eventTypeId: "",
+      region: input.region ?? "",
+      city: input.city ?? "",
+      address: input.address ?? "",
+      startDate: input.startDate,
+      endDate: input.endDate,
+      status: (input.status ?? "upcoming") as EventItem["status"],
+      coverImage: input.coverImage ?? "",
+      ticketsSold: 0,
+      ticketsTotal: 0,
+      revenue: 0,
+      ordersCount: 0,
+      createdAt: new Date().toISOString(),
+    };
+    db.events.push(event);
+    return mockResolve(event);
+  },
+  update(id: string, patch: Partial<EventInput>) {
+    if (!apiConfig.useMocks) return eventsRepo.update(id, patch);
+    const event = db.events.find((e) => e.id === id);
+    if (!event) return mockResolve(null);
+    if (patch.name !== undefined) event.name = patch.name;
+    if (patch.description !== undefined) event.description = patch.description;
+    if (patch.categoryId !== undefined) event.categoryId = patch.categoryId;
+    if (patch.region !== undefined) event.region = patch.region;
+    if (patch.city !== undefined) event.city = patch.city;
+    if (patch.address !== undefined) event.address = patch.address;
+    if (patch.startDate !== undefined) event.startDate = patch.startDate;
+    if (patch.endDate !== undefined) event.endDate = patch.endDate;
+    if (patch.coverImage !== undefined) event.coverImage = patch.coverImage;
+    if (patch.status !== undefined) event.status = patch.status as EventItem["status"];
+    return mockResolve(event);
+  },
+  setStatus(id: string, status: EventDbStatus) {
+    if (!apiConfig.useMocks) return eventsRepo.setStatus(id, status);
+    const event = db.events.find((e) => e.id === id);
+    if (!event) return mockResolve(null);
+    event.status = status as EventItem["status"];
+    return mockResolve(event);
+  },
+  remove(id: string) {
+    if (!apiConfig.useMocks) return eventsRepo.remove(id);
+    const idx = db.events.findIndex((e) => e.id === id);
+    if (idx >= 0) db.events.splice(idx, 1);
+    return mockResolve({ ok: true });
+  },
+  addTicketType(eventId: string, input: TicketTypeInput) {
+    if (!apiConfig.useMocks) return eventsRepo.addTicketType(eventId, input);
+    const ticket: TicketType = {
+      id: `tt-${Date.now().toString(36)}`,
+      eventId,
+      name: input.name,
+      price: input.price,
+      quantity: input.quantity,
+      sold: 0,
+      saleStart: "",
+      saleEnd: "",
+      status: "on_sale",
+    };
+    db.ticketTypes.push(ticket);
+    return mockResolve(ticket);
+  },
+  updateTicketType(ticketTypeId: string, patch: Partial<TicketTypeInput>) {
+    if (!apiConfig.useMocks) return eventsRepo.updateTicketType(ticketTypeId, patch);
+    const tt = db.ticketTypes.find((t) => t.id === ticketTypeId);
+    if (!tt) return mockResolve(null);
+    if (patch.name !== undefined) tt.name = patch.name;
+    if (patch.price !== undefined) tt.price = patch.price;
+    if (patch.quantity !== undefined) tt.quantity = patch.quantity;
+    return mockResolve(tt);
+  },
+  /**
+   * Retire un type de billet : suppression s'il n'a jamais été vendu,
+   * sinon désactivation (préserve l'historique). Retourne l'action réalisée.
+   */
+  removeTicketType(ticketTypeId: string): Promise<{ ok: true; action: "deleted" | "deactivated" }> {
+    if (!apiConfig.useMocks) return eventsRepo.removeTicketType(ticketTypeId);
+    const idx = db.ticketTypes.findIndex((t) => t.id === ticketTypeId);
+    if (idx >= 0) db.ticketTypes.splice(idx, 1);
+    return mockResolve({ ok: true, action: "deleted" });
+  },
+  /** Désactive un type de billet (retiré de la vente, conservé). */
+  deactivateTicketType(ticketTypeId: string) {
+    if (!apiConfig.useMocks) return eventsRepo.deactivateTicketType(ticketTypeId);
+    const tt = db.ticketTypes.find((t) => t.id === ticketTypeId);
+    if (tt) tt.status = "paused";
+    return mockResolve({ ok: true });
+  },
+  /** Catégories réelles (id + nom) pour les sélecteurs de formulaire. */
+  categories(): Promise<{ id: string; name: string }[]> {
+    if (!apiConfig.useMocks) return eventsRepo.categories();
+    return mockResolve(db.categories.map((c) => ({ id: c.id, name: c.name })));
   },
 };
 
@@ -159,10 +321,27 @@ export const ticketService = {
   all() {
     return mockResolve(db.ticketTypes);
   },
+  /**
+   * Tous les types de billets enrichis (nom d'événement + organisation).
+   * Mode réel : Supabase (RLS applique déjà le périmètre de l'utilisateur).
+   * Mode mock : on rattache le nom/organisation depuis les événements mock.
+   */
+  allWithEvents(): Promise<TicketTypeWithEvent[]> {
+    if (!apiConfig.useMocks) return eventsRepo.allTicketTypes();
+    const byId = new Map(db.events.map((e) => [e.id, e]));
+    return mockResolve(
+      db.ticketTypes.map((t) => ({
+        ...t,
+        eventName: byId.get(t.eventId)?.name ?? "",
+        organizationId: byId.get(t.eventId)?.organizationId ?? "",
+      })),
+    );
+  },
 };
 
 export const orderService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return ordersRepo.list(params);
     let items = db.orders;
     items = applySearch(items, params.search, ["reference", "customerName", "eventName"]);
     items = applyFilters(items, params.filters);
@@ -170,9 +349,11 @@ export const orderService = {
     return mockResolve(paginate(items, params.page, params.pageSize ?? 10));
   },
   get(id: string) {
+    if (!apiConfig.useMocks) return ordersRepo.get(id);
     return mockResolve(db.orders.find((o) => o.id === id) ?? null);
   },
   byOrg(orgId: string, params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return ordersRepo.byOrg(orgId, params);
     let items = db.orders.filter((o) => o.organizationId === orgId);
     items = applySearch(items, params.search, ["reference", "customerName", "eventName"]);
     items = applyFilters(items, params.filters);
@@ -182,6 +363,7 @@ export const orderService = {
 
 export const userService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return endUsersRepo.list(params);
     let items = db.endUsers;
     items = applySearch(items, params.search, ["name", "email", "phone"]);
     items = applyFilters(items, params.filters);
@@ -189,12 +371,14 @@ export const userService = {
     return mockResolve(paginate(items, params.page, params.pageSize ?? 10));
   },
   get(id: string) {
+    if (!apiConfig.useMocks) return endUsersRepo.get(id);
     return mockResolve(db.endUsers.find((u) => u.id === id) ?? null);
   },
 };
 
 export const adminService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return adminsRepo.list(params);
     let items = db.admins;
     items = applySearch(items, params.search, ["name", "organizationName", "email"]);
     items = applyFilters(items, params.filters);
@@ -202,6 +386,7 @@ export const adminService = {
     return mockResolve(paginate(items, params.page, params.pageSize ?? 10));
   },
   get(id: string) {
+    if (!apiConfig.useMocks) return adminsRepo.get(id);
     return mockResolve(db.admins.find((a) => a.id === id) ?? null);
   },
 };
@@ -258,6 +443,7 @@ export const organizationService = {
 
 export const paymentService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return paymentsRepo.list(params);
     let items = db.payments;
     items = applySearch(items, params.search, ["transactionId", "orderRef", "customerName"]);
     items = applyFilters(items, params.filters);
@@ -268,6 +454,7 @@ export const paymentService = {
 
 export const licenseService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return licensesRepo.list(params);
     let items = db.licenses;
     items = applySearch(items, params.search, ["organizationName", "type"]);
     items = applyFilters(items, params.filters);
@@ -277,25 +464,61 @@ export const licenseService = {
 
 export const categoryService = {
   all() {
+    if (!apiConfig.useMocks) return eventsRepo.categoriesFull();
     return mockResolve(db.categories);
+  },
+  create(input: CategoryInput) {
+    if (!apiConfig.useMocks) return categoriesRepo.create(input);
+    return mockResolve({ id: `cat-${Date.now().toString(36)}` });
+  },
+  update(id: string, patch: CategoryInput) {
+    if (!apiConfig.useMocks) return categoriesRepo.update(id, patch);
+    return mockResolve({ ok: true as const });
+  },
+  remove(id: string) {
+    if (!apiConfig.useMocks) return categoriesRepo.remove(id);
+    return mockResolve({ ok: true as const });
   },
 };
 
 export const eventTypeService = {
   all() {
+    if (!apiConfig.useMocks) return eventTypesRepo.all();
     return mockResolve(db.eventTypes);
+  },
+  create(input: EventTypeInput) {
+    if (!apiConfig.useMocks) return eventTypesRepo.create(input);
+    return mockResolve({ id: `et-${Date.now().toString(36)}` });
+  },
+  update(id: string, patch: EventTypeInput) {
+    if (!apiConfig.useMocks) return eventTypesRepo.update(id, patch);
+    return mockResolve({ ok: true as const });
+  },
+  remove(id: string) {
+    if (!apiConfig.useMocks) return eventTypesRepo.remove(id);
+    return mockResolve({ ok: true as const });
   },
 };
 
 export const promotionService = {
   list(params: QueryParams = {}) {
+    if (!apiConfig.useMocks) return promotionsRepo.list(params);
     let items = db.promotions;
     items = applySearch(items, params.search, ["name", "code"]);
     items = applyFilters(items, params.filters);
     return mockResolve(paginate(items, params.page, params.pageSize ?? 10));
   },
   byOrg(orgId: string) {
+    if (!apiConfig.useMocks) return promotionsRepo.byOrg(orgId);
     return mockResolve(db.promotions.filter((p) => p.organizationId === orgId));
+  },
+  create(input: PromotionInput) {
+    if (!apiConfig.useMocks) return promotionsRepo.create(input);
+    return mockResolve({ id: `promo-${Date.now().toString(36)}` });
+  },
+  remove(id: string) {
+    if (!apiConfig.useMocks) return promotionsRepo.remove(id);
+    return mockResolve({ ok: true as const });
   },
 };
 
@@ -460,30 +683,57 @@ export const subscriptionPromotionService = {
 
 export const notificationService = {
   all() {
+    if (!apiConfig.useMocks) return notificationsRepo.all();
     return mockResolve(db.notifications);
+  },
+  create(input: NotificationInput) {
+    if (!apiConfig.useMocks) return notificationsRepo.create(input);
+    return mockResolve({ id: `notif-${Date.now().toString(36)}` });
+  },
+  remove(id: string) {
+    if (!apiConfig.useMocks) return notificationsRepo.remove(id);
+    return mockResolve({ ok: true as const });
   },
 };
 
 export const articleService = {
   all() {
+    if (!apiConfig.useMocks) return articlesRepo.all();
     return mockResolve(db.articles);
+  },
+  create(input: ArticleInput) {
+    if (!apiConfig.useMocks) return articlesRepo.create(input);
+    return mockResolve({ id: `art-${Date.now().toString(36)}` });
+  },
+  remove(id: string) {
+    if (!apiConfig.useMocks) return articlesRepo.remove(id);
+    return mockResolve({ ok: true as const });
   },
 };
 
 export const analyticsService = {
-  revenueOverTime: () => mockResolve(analytics.revenueOverTime),
-  ticketsOverTime: () => mockResolve(analytics.ticketsOverTime),
-  eventsBreakdown: () => mockResolve(analytics.eventsBreakdown),
-  usersByRegion: () => mockResolve(analytics.usersByRegion),
-  revenueByCategory: () => mockResolve(analytics.revenueByCategory),
-  ticketDistribution: () => mockResolve(analytics.ticketDistribution),
-  topOrganizations: () => mockResolve(analytics.topOrganizations),
-  topEvents: () => mockResolve(analytics.topEvents),
+  revenueOverTime: (orgId?: string) =>
+    apiConfig.useMocks ? mockResolve(analytics.revenueOverTime) : analyticsRepo.revenueOverTime(orgId),
+  ticketsOverTime: (orgId?: string) =>
+    apiConfig.useMocks ? mockResolve(analytics.ticketsOverTime) : analyticsRepo.ticketsOverTime(orgId),
+  eventsBreakdown: () =>
+    apiConfig.useMocks ? mockResolve(analytics.eventsBreakdown) : analyticsRepo.eventsBreakdown(),
+  usersByRegion: () =>
+    apiConfig.useMocks ? mockResolve(analytics.usersByRegion) : analyticsRepo.usersByRegion(),
+  revenueByCategory: () =>
+    apiConfig.useMocks ? mockResolve(analytics.revenueByCategory) : analyticsRepo.revenueByCategory(),
+  ticketDistribution: (orgId?: string) =>
+    apiConfig.useMocks ? mockResolve(analytics.ticketDistribution) : analyticsRepo.ticketDistribution(orgId),
+  topOrganizations: () =>
+    apiConfig.useMocks ? mockResolve(analytics.topOrganizations) : analyticsRepo.topOrganizations(),
+  topEvents: (orgId?: string) =>
+    apiConfig.useMocks ? mockResolve(analytics.topEvents) : analyticsRepo.topEvents(orgId),
 };
 
 // --- Dashboard KPI aggregation ---
 export const dashboardService = {
   superAdminKpis() {
+    if (!apiConfig.useMocks) return analyticsRepo.superAdminKpis();
     // Les revenus sont exprimés dans la devise de chaque entreprise :
     // on les convertit en devise de référence avant de les additionner.
     const totalRevenue = db.organizations.reduce(
@@ -504,6 +754,7 @@ export const dashboardService = {
   },
   /** KPIs focused on companies, subscriptions and promotions. */
   subscriptionKpis() {
+    if (!apiConfig.useMocks) return analyticsRepo.subscriptionKpis();
     const subs = db.subscriptions.map(withComputedStatus);
     const now = Date.now();
     const soon = now + 30 * 24 * 60 * 60 * 1000;
@@ -531,6 +782,7 @@ export const dashboardService = {
     });
   },
   adminKpis(orgId: string) {
+    if (!apiConfig.useMocks) return analyticsRepo.adminKpis(orgId);
     const orgEvents = db.events.filter((e) => e.organizationId === orgId);
     const orgOrders = db.orders.filter((o) => o.organizationId === orgId);
     const revenue = orgEvents.reduce((s, e) => s + e.revenue, 0);
@@ -546,6 +798,28 @@ export const dashboardService = {
     });
   },
 };
+
+// ============================================================
+// Media (upload d'images)
+// ============================================================
+export const mediaService = {
+  /**
+   * Téléverse une image et renvoie son URL.
+   * - Mode réel : upload vers Supabase Storage (bucket "event-images").
+   * - Mode mock : renvoie une data URL locale (aucun réseau).
+   */
+  uploadImage(file: File, folder = "covers"): Promise<string> {
+    if (!apiConfig.useMocks) return storageRepo.uploadImage(file, folder);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.onerror = () => reject(new Error("Lecture du fichier impossible."));
+      reader.readAsDataURL(file);
+    });
+  },
+};
+
+export type { TicketTypeWithEvent } from "@/api/repositories/events";
 
 export type {
   QueryParams,

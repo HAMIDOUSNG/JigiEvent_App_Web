@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, MoreHorizontal, Pencil, Trash2, Copy } from "lucide-react";
+import { Plus, MoreHorizontal, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Toolbar } from "@/components/ui/Toolbar";
@@ -26,6 +26,19 @@ export default function PromotionsPage() {
   const [confirm, setConfirm] = useState<Promotion | null>(null);
 
   const list = useListQuery<Promotion>({ key: "promotions", fetcher: promotionService.list });
+
+  async function removeConfirmed() {
+    if (!confirm) return;
+    try {
+      await promotionService.remove(confirm.id);
+      toast.success("Promotion supprimée", confirm.name);
+      list.refetch();
+    } catch (err) {
+      toast.error("Suppression impossible", err instanceof Error ? err.message : "");
+    } finally {
+      setConfirm(null);
+    }
+  }
 
   const columns: Column<Promotion>[] = [
     {
@@ -52,9 +65,6 @@ export default function PromotionsPage() {
         <Dropdown
           trigger={<span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-muted hover:bg-sand"><MoreHorizontal className="h-4.5 w-4.5" /></span>}
           items={[
-            { label: "Modifier", icon: Pencil, onClick: () => toast.info("Modifier", p.name) },
-            { label: "Dupliquer", icon: Copy, onClick: () => toast.success("Promotion dupliquée", p.name) },
-            { divider: true, label: "" },
             { label: "Supprimer", icon: Trash2, tone: "danger", onClick: () => setConfirm(p) },
           ]}
         />
@@ -103,7 +113,7 @@ export default function PromotionsPage() {
         />
       )}
 
-      <PromotionModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <PromotionModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={() => list.refetch()} />
 
       <ConfirmDialog
         open={!!confirm}
@@ -111,7 +121,7 @@ export default function PromotionsPage() {
         title="Supprimer la promotion ?"
         message="Cette action est irréversible. Le code promo ne sera plus utilisable."
         confirmLabel="Supprimer"
-        onConfirm={() => toast.success("Promotion supprimée", confirm?.name)}
+        onConfirm={removeConfirmed}
       />
     </div>
   );
