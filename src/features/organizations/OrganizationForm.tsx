@@ -17,6 +17,7 @@ import { organizationService, planService } from "@/services";
 import { ENTITY_STATUS, SUBSCRIPTION_PERIOD_SUFFIX } from "@/constants/status";
 import { formatCurrency } from "@/utils/format";
 import { toast } from "@/store/toast";
+import { runWithToast } from "@/utils/errors";
 import type { Organization } from "@/types";
 
 const schema = z.object({
@@ -114,14 +115,22 @@ export function OrganizationForm({
   async function onSubmit(values: FormOutput) {
     setSubmitting(true);
     const payload = { ...values, logo };
-    if (mode === "edit" && organization) {
-      await organizationService.update(organization.id, payload);
-      toast.success("Entreprise mise à jour", values.name);
-    } else {
-      await organizationService.create(payload);
-      toast.success("Compte entreprise créé", `${values.name} dispose maintenant d'un espace Admin.`);
-    }
+    const ok = await runWithToast(
+      async () => {
+        if (mode === "edit" && organization) {
+          await organizationService.update(organization.id, payload);
+        } else {
+          await organizationService.create(payload);
+        }
+      },
+      { errorTitle: mode === "edit" ? "Mise à jour impossible" : "Création impossible" }
+    );
     setSubmitting(false);
+    if (!ok) return;
+    toast.success(
+      mode === "edit" ? "Entreprise mise à jour" : "Compte entreprise créé",
+      mode === "edit" ? values.name : `${values.name} dispose maintenant d'un espace Admin.`
+    );
     router.push("/organizations");
   }
 

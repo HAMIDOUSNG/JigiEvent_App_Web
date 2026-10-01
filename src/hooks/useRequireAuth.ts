@@ -10,10 +10,13 @@ import type { Role } from "@/types";
 export function useRequireAuth(allowedRoles?: Role[]) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const hydrating = useAuthStore((s) => s.hydrating);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Allow zustand persist to hydrate before deciding
+    // Attend la fin de la restauration de session (Supabase) avant de décider.
+    if (hydrating) return;
+
     const t = setTimeout(() => {
       if (!user) {
         router.replace("/login");
@@ -26,7 +29,7 @@ export function useRequireAuth(allowedRoles?: Role[]) {
       setReady(true);
     }, 0);
     return () => clearTimeout(t);
-  }, [user, allowedRoles, router]);
+  }, [user, allowedRoles, router, hydrating]);
 
   return { user, ready: ready && !!user };
 }

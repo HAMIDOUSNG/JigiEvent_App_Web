@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { planService } from "@/services";
 import { toast } from "@/store/toast";
+import { runWithToast } from "@/utils/errors";
 import type { SubscriptionPlan } from "@/types";
 
 const schema = z.object({
@@ -75,13 +76,15 @@ export function PlanModal({
       features: (values.features ?? "").split("\n").map((f) => f.trim()).filter(Boolean),
       status: values.status,
     };
-    if (mode === "edit" && plan) {
-      await planService.update(plan.id, payload);
-      toast.success("Plan mis à jour", values.name);
-    } else {
-      await planService.create(payload);
-      toast.success("Plan créé", values.name);
-    }
+    const ok = await runWithToast(
+      async () => {
+        if (mode === "edit" && plan) await planService.update(plan.id, payload);
+        else await planService.create(payload);
+      },
+      { errorTitle: "Enregistrement impossible" }
+    );
+    if (!ok) return;
+    toast.success(mode === "edit" ? "Plan mis à jour" : "Plan créé", values.name);
     await qc.invalidateQueries({ queryKey: ["plans"] });
     await qc.invalidateQueries({ queryKey: ["plans-active"] });
     onClose();
